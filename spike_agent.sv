@@ -112,7 +112,7 @@ initial begin
                     2 : begin
                         assert (io_addr[0] == 1'b0) else $error("Unaligned addres for read HWORD");
                     end
-                    3 : begin
+                    4 : begin
                         assert (io_addr[1:0] == 2'b00) else $error("Unaligned addres for read WORD");
                     end
                     default : begin
@@ -126,14 +126,15 @@ initial begin
                 while (io_req_ack == 1'b0) begin
                     @(posedge clk);
                 end
+                @(negedge clk);
                 io_req = 1'b0;
                 io_wr  = 1'bx;
                 io_addr = 'x;
                 
                 // Wait for RDATA
-                @(negedge clk);
+                @(posedge clk);
                 while (io_data_ack == 1'b0) begin
-                    @(negedge clk);
+                    @(posedge clk);
                 end
 
                 // Return RDATA
@@ -178,15 +179,16 @@ initial begin
                 while (io_req_ack == 1'b0) begin
                     @(posedge clk);
                 end
+                @(negedge clk);
                 io_req = 1'b0;
                 io_wr  = 1'bx;
                 io_wen = 'x;
                 io_addr = 'x;
                 
                 // Wait for RDATA
-                @(negedge clk);
+                @(posedge clk);
                 while (io_data_ack == 1'b0) begin
-                    @(negedge clk);
+                    @(posedge clk);
                 end
 
             end    
