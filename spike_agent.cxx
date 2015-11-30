@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "spike_agent.hxx"
 
 namespace {
@@ -18,8 +19,9 @@ namespace {
 
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
-void spikeSetReset(logic active){
-	is_run = !active;
+void spikeSetReset(svLogicVec32 active){
+	is_run = !(bool)active.d;
+        printf ("event @ reset: %d\n",active.d) ; // typedef struct { unsigned int c; unsigned int d;} svLogicVec32;
 }
 
 /// Need call each clock 
@@ -28,6 +30,7 @@ int spikeClock(void){
 	if (!is_run) {
 		return 0;
 	}
+        printf ("event @ clk\n") ;
 	static unsigned cnt = 0;
 	switch (cnt++ % 4) {
 	case 2:
