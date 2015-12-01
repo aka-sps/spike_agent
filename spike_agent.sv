@@ -3,9 +3,62 @@
 // authors: Dmitri Pavlov
 //////////////////////////
 `timescale 1ns/100ps
-module spike_tb (
+module spike_agent #(
+    parameter MEM_POWER_SIZE = 12,
+    parameter AXI_DATA_WIDTH = 32,
+    parameter AXI_ADDR_WIDTH = (MEM_POWER_SIZE),
+    parameter AXI_MASK_WIDTH = (AXI_DATA_WIDTH/8)
+)
+(
+    // System
+    input   logic                           CPUNC_ARESETn,
+    input   logic                           CPUNC_ACLK,
+    
+    // Slave interface
+    // Write Address Channel:
+    output  logic   [7:0]                   CPUNC_AWID,    //
+    output  logic   [AXI_ADDR_WIDTH-1:0]    CPUNC_AWADDR,  //
+    output  logic   [7:0]                   CPUNC_AWLN,    //
+    output  logic   [1:0]                   CPUNC_AWSIZE,  // always 10
+    output  logic   [1:0]                   CPUNC_AWBURST, //
+    output  logic                           CPUNC_AWLOCK,  // always 0
+    output  logic   [2:0]                   CPUNC_AWCACHE, // always 000
+    output  logic                           CPUNC_AWPROT,  // always 0
+    output  logic   [2:0]                   CPUNC_AWQOS,   // always 000
+    output  logic                           CPUNC_AWVALID, //
+    input   logic                           CPUNC_AWREADY, // <-- SLAVE
+    // Write Data Channel:
+    output  logic   [7:0]                   CPUNC_WID,
+    output  logic   [AXI_DATA_WIDTH-1:0]    CPUNC_WDATA,   // Write Data
+    output  logic   [AXI_MASK_WIDTH-1:0]    CPUNC_WSTRB,   // Byte mask
+    output  logic                           CPUNC_WLAST,   //
+    output  logic                           CPUNC_WVALID,  //
+    input   logic                           CPUNC_WREADY,  // <-- SLAVE
+    // Write Response Channel:
+    input   logic   [7:0]                   CPUNC_BID,     // <-- SLAVE
+    input   logic                           CPUNC_BRESP,   // <-- SLAVE
+    input   logic                           CPUNC_BVALID,  // <-- SLAVE
+    output  logic                           CPUNC_BREADY,  //
+    // Read Address Channel:
+    output  logic   [7:0]                   CPUNC_ARID,    //
+    output  logic   [AXI_ADDR_WIDTH-1:0]    CPUNC_ARADDR,  //
+    output  logic   [7:0]                   CPUNC_ARLN,    // 
+    output  logic   [1:0]                   CPUNC_ARSIZE,  // always 10
+    output  logic   [1:0]                   CPUNC_ARBURST, //
+    output  logic                           CPUNC_ARLOCK,  // always 0
+    output  logic   [2:0]                   CPUNC_ARCACHE, // always 000
+    output  logic                           CPUNC_ARPROT,  // always 0
+    output  logic   [2:0]                   CPUNC_ARQOS,   // always 000
+    output  logic                           CPUNC_ARVALID, //
+    input   logic                           CPUNC_ARREADY, // <-- SLAVE
+    // Read Address Channel:
+    input   logic   [7:0]                   CPUNC_RID,     // <-- SLAVE
+    input   logic   [AXI_DATA_WIDTH-1:0]    CPUNC_RDATA,   // <-- SLAVE
+    input   logic                           CPUNC_RRESP,   // <-- SLAVE
+    input   logic                           CPUNC_RLAST,   // <-- SLAVE
+    input   logic                           CPUNC_RVALID,  // <-- SLAVE
+    output  logic                           CPUNC_RREADY    
 );
-
 
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
@@ -37,58 +90,61 @@ import "DPI-C" context function void spikeSetData(int data);
 /// Each clock with or without transaction should be finished with call of this function
 import "DPI-C" context function void spikeEndClock();
 
-
-
-logic               rst_n       = 1'b1;
-logic               clk         = 1'b0;
-int                 spikeCmd;
-int                 spikeAddr;
-int                 spikeSize;
-int                 spikeWdata;
-int                 spikeRdata;
-
-logic               io_req;
-logic               io_wr;
-logic   [3:0]       io_wen;
-logic   [31:0]      io_addr;
-logic   [31:0]      io_wdata;
-logic               io_req_ack;
-logic   [31:0]      io_rdata;
-logic               io_data_ack;
-
-
-logic   [7:0]      io_memory [0:255];
-
-// Reset Logic
+// ------------------------------
+int                             spikeCmd;
+int                             spikeAddr;
+int                             spikeSize;
+int                             spikeWdata;
+int                             spikeRdata;
+//-------------------------------
 initial begin
-    $display("TB: start");
-    rst_n   = 1'b0;
-    #100ns rst_n    = 1'b1;
-
-    // Start Spike
+    #1
+    @(posedge CPUNC_ARESETn);
+    $display("Spike Agent: Start Spike after reset");
     spikeSetReset(1'b0);
-    
-    #1us;    
-    $display("TB: finish");
-    $finish;       
+   
+    @(negedge CPUNC_ARESETn);
+    $display("Spike Agent: Reset is coming!!!");
 end
 
-always begin
-    #5ns clk = ~clk;
-end
+assign CPUNC_AWID    = '0;     //
+assign CPUNC_AWLN    = '0;     //
+assign CPUNC_AWSIZE  = 2'b10;  // always 10
+assign CPUNC_AWBURST = '0;     //
+assign CPUNC_AWLOCK  = '0;     // always 0
+assign CPUNC_AWCACHE = '0;     // always 000
+assign CPUNC_AWPROT  = '0;     // always 0
+assign CPUNC_AWQOS   = '0;     // always 000
+assign CPUNC_WID     = '0;
 
-
+assign CPUNC_ARID    = '0;     //
+assign CPUNC_ARLN    = '0;     // 
+assign CPUNC_ARSIZE  = 2'b10;   // always 10
+assign CPUNC_ARBURST = '0;     //
+assign CPUNC_ARLOCK  = '0;     // always 0
+assign CPUNC_ARCACHE = '0;     // always 000
+assign CPUNC_ARPROT  = '0;     // always 0
+assign CPUNC_ARQOS   = '0;     // always 000
 
 
 initial begin
-    io_req   = 1'b0;
-    io_wr    = 1'bx;
-    io_wen   = 'x;
-    io_addr  = 'x;
-    io_wdata = 'x;
-    @(posedge rst_n);
-    while (rst_n == 1'b1) begin
-        @(posedge clk);
+
+    CPUNC_AWADDR    = 'x;  //
+    CPUNC_AWVALID   = 1'b0; //
+    CPUNC_WDATA     = 'x;   // Write Data
+    CPUNC_WSTRB     = 'x;   // Byte mask
+    CPUNC_WLAST     = 'x;   //
+    CPUNC_WVALID    = 1'b0;  //
+    CPUNC_BREADY    = 1'b0;  //
+
+    
+    CPUNC_ARADDR    = 'x;  //
+    CPUNC_ARVALID   = 1'b0; //
+    CPUNC_RREADY    = 1'b0;
+    @(posedge CPUNC_ARESETn);
+
+    while (CPUNC_ARESETn == 1'b1) begin
+        @(posedge CPUNC_ACLK);
         spikeCmd = spikeClock();
         #1
         case (spikeCmd)
@@ -101,46 +157,45 @@ initial begin
                 spikeSize  = spikeGetSize();
                 
                 // Convert to logic
-                io_addr = unsigned'(spikeAddr);
-                if (io_addr[31:28] != 4'hF) begin
-                    $error("Wrong address to read from IO");
-                end
+                CPUNC_ARADDR = unsigned'(spikeAddr);
                 // Check allignment
                 case (spikeSize)
                     1 : begin 
                         // It is ok
                     end
                     2 : begin
-                        assert (io_addr[0] == 1'b0) else $error("Unaligned addres for read HWORD");
+                        assert (CPUNC_ARADDR[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD");
                     end
                     4 : begin
-                        assert (io_addr[1:0] == 2'b00) else $error("Unaligned addres for read WORD");
+                        assert (CPUNC_ARADDR[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD");
                     end
                     default : begin
-                        assert (0) else $error("Wrong size accesss for Reading");
+                        assert (0) else $error("Spike Agent: Wrong size accesss for Reading: %d",spikeSize); 
                     end
                 endcase
                 // Start reading
-                io_req = 1'b1;
-                io_wr  = 1'b0;
-                @(posedge clk);
-                while (io_req_ack == 1'b0) begin
-                    @(posedge clk);
+                CPUNC_ARVALID = 1'b1;
+                @(posedge CPUNC_ACLK);
+                while (CPUNC_ARREADY == 1'b0) begin
+                    @(posedge CPUNC_ACLK);
                 end
-                //@(posedge clk);
                 #1
-                io_req = 1'b0;
-                io_wr  = 1'bx;
-                io_addr = 'x;
+                CPUNC_ARVALID = 1'b0;
+                CPUNC_ARADDR  = 'x;
                 
                 // Wait for RDATA
-                @(posedge clk);
-                while (io_data_ack == 1'b0) begin
-                    @(posedge clk);
+                CPUNC_RREADY = 1'b1;
+                @(posedge CPUNC_ACLK);
+                while (CPUNC_RVALID == 1'b0) begin
+                    @(posedge CPUNC_ACLK);
                 end
+                #1
+                assert (CPUNC_RRESP == '0) else $error("Spike Agent: Read transaction completed with Error Response");
+                CPUNC_RREADY = 1'b0;
+
 
                 // Return RDATA
-                spikeSetData(int'(io_rdata));
+                spikeSetData(int'(CPUNC_RDATA));
             end    
 
             2 : begin
@@ -150,96 +205,80 @@ initial begin
                 spikeWdata = spikeGetData();
                 
                 // Convert to logic
-                io_addr = unsigned'(spikeAddr);
-                if (io_addr[31:28] != 4'hF) begin
-                    $error("Wrong address to read from IO");
-                end
-                io_wdata = unsigned'(spikeWdata);
+                CPUNC_AWADDR = unsigned'(spikeAddr);
                 // Check allignment
                 case (spikeSize)
                     1 : begin 
                         // It is ok
-                        io_wen = 4'b0001;
                     end
                     2 : begin
-                        assert (io_addr[0] == 1'b0) else $error("Unaligned addres for read HWORD");
-                        io_wen = 4'b0011;
+                        assert (CPUNC_AWADDR[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD");
                     end
                     4 : begin
-                        assert (io_addr[1:0] == 2'b00) else $error("Unaligned addres for read WORD");
-                        io_wen = 4'b1111;
+                        assert (CPUNC_AWADDR[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD");
                     end
                     default : begin
-                        $display("spikeSize: %d",spikeSize);
-                        assert (0) else $error("Wrong size accesss for Reading"); 
+                        assert (0) else $error("Spike Agent: Wrong size accesss for Writing: %d",spikeSize); 
                     end
                 endcase
-                // Start reading
-                io_req = 1'b1;
-                io_wr  = 1'b1;
-                @(posedge clk);
-                while (io_req_ack == 1'b0) begin
-                    @(posedge clk);
-                end
-                //@(posedge clk);
-                #1
-                io_req = 1'b0;
-                io_wr  = 1'bx;
-                io_wen = 'x;
-                io_addr = 'x;
                 
-                // Wait for RDATA
-                @(posedge clk);
-                while (io_data_ack == 1'b0) begin
-                    @(posedge clk);
+                // Start writing
+                CPUNC_AWVALID = 1'b1;
+                @(posedge CPUNC_ACLK);
+                while (CPUNC_AWREADY == 1'b0) begin
+                    @(posedge CPUNC_ACLK);
                 end
+                #1
+                CPUNC_AWVALID = 1'b0;
+                CPUNC_AWADDR  = 'x;
 
+
+                //--
+                CPUNC_WVALID = 1'b1;
+                CPUNC_WLAST  = 1'b1;
+                CPUNC_WDATA  = unsigned'(spikeWdata);
+                case (spikeSize)
+                    1 : begin 
+                        // It is ok
+                        CPUNC_WSTRB = 4'b0001;
+                    end
+                    2 : begin
+                        CPUNC_WSTRB = 4'b0011;
+                    end
+                    4 : begin
+                        CPUNC_WSTRB = 4'b1111;
+                    end
+                    default : begin
+                    end
+                endcase
+                @(posedge CPUNC_ACLK);
+                while (CPUNC_WREADY == 1'b0) begin
+                    @(posedge CPUNC_ACLK);
+                end
+                #1
+                CPUNC_WVALID = 1'b0;
+                CPUNC_WSTRB  = 'x;
+                CPUNC_WDATA  = 'x;
+                CPUNC_WLAST  = 1'bx;
+
+                //--
+                CPUNC_BREADY = 1'b1;
+                @(posedge CPUNC_ACLK);
+                while (CPUNC_BVALID == 1'b0) begin
+                    @(posedge CPUNC_ACLK);
+                end
+                #1
+                CPUNC_BREADY = 1'b0;
             end    
             default : begin
                 assert (0) else $error("Wrong command from Spike");
             end
+
         endcase
         spikeEndClock();
     end
 end
 
-
-//// Memory 
-assign io_req_ack = io_req;
-
-always_ff @(negedge rst_n, posedge clk) begin
-    if (rst_n == 1'b0) begin
-        io_data_ack <= 1'b0;
-    end else begin
-        io_data_ack <= io_req & io_req_ack;
-    end
-end
-
-
-
-always_ff @(posedge clk) begin
-    if ((io_req == 1'b1) && (io_req_ack == 1'b1) && (io_wr == 1'b0)) begin
-        for (int unsigned i=0; i<4; ++i) begin
-            io_rdata[(i+1)*8-1-:8] <= io_memory[io_addr[7:0]+i];
-        end
-    end else begin
-        io_rdata <= 'x;
-    end
-end
-
-always_ff @(posedge clk) begin
-    if ((io_req == 1'b1) && (io_req_ack == 1'b1) && (io_wr == 1'b1)) begin
-        for (int unsigned i=0; i<4; ++i) begin
-            io_memory[io_addr[7:0]+i] <= io_wdata[(i+1)*8-1-:8];
-        end
-    end
-end
-
-
-
-
-
-
-
-endmodule : spike_tb
+// ------------------------------------------------
+endmodule : spike_agent
 
