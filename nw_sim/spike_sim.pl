@@ -82,7 +82,7 @@ for (;;) {
 my $base = 0xFEED000;
 my $limit = 1 << 12;
 for (;;) {
-    my $r = int(rand(32));
+    my $r = int(rand(4));
     my $req;
     if ($r == 0) {
         my $shift = int(rand(3));
@@ -95,7 +95,7 @@ for (;;) {
         my $size = 1 << $shift;
         my $offset = int(rand($limit >> $shift)) << $shift;
         my $data = int(rand(1 << (8 * ($shift + 1))));
-        $req = sprintf("%s:%d:%d:%d", "read", $base + $offset, $size, $data);
+        $req = sprintf("%s:%d:%d:%d", "write", $base + $offset, $size, $data);
     }
     else {
         $req = sprintf("%s", "skip");
