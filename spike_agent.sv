@@ -2,7 +2,7 @@
 // Test Bench for Spike
 // authors: Dmitri Pavlov
 //////////////////////////
-
+`timescale 1ns/100ps
 module spike_tb (
 );
 
@@ -68,7 +68,7 @@ initial begin
     // Start Spike
     spikeSetReset(1'b0);
     
-    #100ms;    
+    #1us;    
     $display("TB: finish");
     $finish;       
 end
@@ -88,8 +88,9 @@ initial begin
     io_wdata = 'x;
     @(posedge rst_n);
     while (rst_n == 1'b1) begin
-        @(negedge clk);
+        @(posedge clk);
         spikeCmd = spikeClock();
+        #1
         case (spikeCmd)
             0 : begin
                 // Todo Nothing
@@ -126,7 +127,8 @@ initial begin
                 while (io_req_ack == 1'b0) begin
                     @(posedge clk);
                 end
-                @(negedge clk);
+                //@(posedge clk);
+                #1
                 io_req = 1'b0;
                 io_wr  = 1'bx;
                 io_addr = 'x;
@@ -179,7 +181,8 @@ initial begin
                 while (io_req_ack == 1'b0) begin
                     @(posedge clk);
                 end
-                @(negedge clk);
+                //@(posedge clk);
+                #1
                 io_req = 1'b0;
                 io_wr  = 1'bx;
                 io_wen = 'x;
@@ -227,7 +230,7 @@ end
 always_ff @(posedge clk) begin
     if ((io_req == 1'b1) && (io_req_ack == 1'b1) && (io_wr == 1'b1)) begin
         for (int unsigned i=0; i<4; ++i) begin
-            io_memory[io_addr[7:0]+i] <= io_rdata[(i+1)*8-1-:8];
+            io_memory[io_addr[7:0]+i] <= io_wdata[(i+1)*8-1-:8];
         end
     end
 end
