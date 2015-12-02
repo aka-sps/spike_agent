@@ -12,7 +12,10 @@
 #include <cstdio>
 #include <memory>
 #include <vector>
+#include <iostream>
+#include <iomanip>
 
+#define LOGGER std::cerr << __FILE__ << "(" << __LINE__ << "): "
 namespace {
 enum class Request_type : uint8_t
 {
@@ -39,22 +42,30 @@ struct Request
     static std::shared_ptr<Request const>
         deserialize(std::vector<uint8_t> const& a_buf) {
         typedef std::shared_ptr<Request const> res_type;
-        if (a_buf.size() < 2)
+        if (a_buf.size() < 2) {
+            LOGGER << "a_buf.size() < 2 (" << a_buf.size() << ")" << std::endl;
             return res_type();
+        }
         uint8_t const sn = a_buf[0];
-        if (a_buf[1] > static_cast<uint8_t>(Request_type::reset))
+        if (a_buf[1] > static_cast<uint8_t>(Request_type::reset)) {
+            LOGGER << "a_buf[1] > static_cast<uint8_t>(Request_type::reset) (" << a_buf[1] << ")" << std::endl;
             return res_type();
+        }
         Request_type const cmd = static_cast<Request_type>(a_buf[1]);
         switch (cmd) {
             case Request_type::read:
             case Request_type::write:
                 {
-                    uint8_t const size = a_buf[2];
-                    if (!(size == 1 || size == 2 || size == 4))
+                    size_t const size = a_buf[2];
+                    if (!(size == 1 || size == 2 || size == 4)) {
+                        LOGGER << "Bad size: " << unsigned(size) << std::endl;
                         return res_type();
+                    }
                     uint32_t const address = (((((a_buf[4] << 8) | a_buf[5]) << 8) | a_buf[6]) << 8) | a_buf[7];
-                    if (!(address & (size - 1) == 0))
+                    if (address & (size - 1) != 0) {
+                        LOGGER << "address & (size - 1) != 0 (address=" << address << ", size=" << size << ")" << std::endl;
                         return res_type();
+                    }
                     if (cmd == Request_type::write) {
                         uint32_t const data = (((((a_buf[8] << 8) | a_buf[9]) << 8) | a_buf[10]) << 8) | a_buf[11];
                         return res_type(new Request(sn, cmd, address, size, data));
@@ -73,6 +84,17 @@ struct Request
     uint32_t m_address;
     uint8_t m_size;
     uint32_t m_data;
+
+    friend std::ostream&
+        operator << (std::ostream& a_ostr, Request const& a_req) {
+        a_ostr
+            << "sn = " << std::dec << unsigned(a_req.m_sn)
+            << "cmd = " << unsigned(a_req.m_cmd)
+            << "address = " << std::hex << a_req.m_sn << std::dec
+            << "size = " << unsigned(a_req.m_size)
+            << "data = " << std::hex << unsigned(a_req.m_data) << std::dec;
+        return a_ostr;
+    }
 };
 
 struct ACK
@@ -89,6 +111,7 @@ struct ACK
     std::vector<uint8_t> serialize()const {
         typedef std::vector<uint8_t> res_type;
         res_type res;
+        res.reserve(8);
         res.push_back(m_sn);
         res.push_back(static_cast<uint8_t>(m_cmd));
         switch (this->m_cmd) {
@@ -127,7 +150,7 @@ class Server
         }
 
         ~Socket() {
-            close(this->m_socket);
+            ::close(this->m_socket);
         }
         std::vector<uint8_t>
             recv(size_t const a_len = 1024) {
@@ -136,9 +159,11 @@ class Server
             for (;;) {
                 std::vector<uint8_t> buf(a_len);
                 this->m_addrlen = sizeof this->m_saddr;
+                LOGGER << "recvfrom..." << std::endl;
                 ssize_t const size = ::recvfrom(this->m_socket, &buf[0], buf.size(), 0, src_addr, addrlen);
                 if (size >= 0) {
                     buf.resize(size);
+                    LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
                     return buf;
                 }
             }
@@ -167,11 +192,15 @@ public:
     std::shared_ptr<Request const>
         get_next_request() {
         for (;;) {
-            std::shared_ptr<Request const> const p_req = Request::deserialize(m_socket.recv());
-            if (!p_req)
+            std::shared_ptr<Request const> const p_req = Request::deserialize(this->m_socket.recv());
+            if (!p_req) {
+                LOGGER << "Bad Request" << std::endl;
                 continue;
+            }
+            LOGGER << "Received request: " << *p_req << std::endl;
             if (get_last_request() && p_req->m_sn == get_last_request()->m_sn) {
-                m_socket.send(m_p_ack->serialize());
+                LOGGER << "Resend ACK" << std::endl;
+                this->m_socket.send(m_p_ack->serialize());
             } else {
                 this->m_p_req = p_req;
                 break;
