@@ -87,13 +87,19 @@ struct Request
 
     friend std::ostream&
         operator << (std::ostream& a_ostr, Request const& a_req) {
-        a_ostr
-            << "Request"
-            << " sn = " << std::dec << unsigned(a_req.m_sn)
-            << " cmd = " << unsigned(a_req.m_cmd)
-            << " address = " << std::hex << a_req.m_address << std::dec
-            << " size = " << unsigned(a_req.m_size)
-            << " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
+        a_ostr <<
+            "Request" <<
+            " sn = " << std::dec << unsigned(a_req.m_sn) <<
+            " cmd = " << unsigned(a_req.m_cmd);
+        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::write) {
+            a_ostr <<
+                " address = " << std::hex << a_req.m_address << std::dec <<
+                " size = " << unsigned(a_req.m_size);
+            if (a_req.m_cmd == Request_type::write) {
+                a_ostr <<
+                    " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
+            }
+        }
         return a_ostr;
     }
 };
@@ -133,6 +139,19 @@ struct ACK
     uint8_t m_sn;
     Request_type m_cmd;
     uint32_t m_data;
+
+    friend std::ostream&
+        operator << (std::ostream& a_ostr, ACK const& a_req) {
+        a_ostr <<
+            "ACK" <<
+            " sn = " << std::dec << unsigned(a_req.m_sn) <<
+            " cmd = " << unsigned(a_req.m_cmd);
+        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::reset) {
+            a_ostr
+                << " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
+        }
+        return a_ostr;
+    }
 };
 
 class Server
@@ -160,11 +179,11 @@ class Server
             for (;;) {
                 std::vector<uint8_t> buf(a_len);
                 this->m_addrlen = sizeof this->m_saddr;
-                LOGGER << "recvfrom..." << std::endl;
+                // LOGGER << "recvfrom..." << std::endl;
                 ssize_t const size = ::recvfrom(this->m_socket, &buf[0], buf.size(), 0, src_addr, addrlen);
                 if (size >= 0) {
                     buf.resize(size);
-                    LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
+                    // LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
                     return buf;
                 }
             }
@@ -221,6 +240,7 @@ public:
     }
     void
         send_ack()const {
+        LOGGER << *m_p_ack << std::endl;
         this->m_socket.send(m_p_ack->serialize());
     }
 private:
