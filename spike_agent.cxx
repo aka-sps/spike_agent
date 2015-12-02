@@ -217,7 +217,7 @@ public:
                 LOGGER << "Bad Request" << std::endl;
                 continue;
             }
-            LOGGER << "Received request: " << *p_req << std::endl;
+            // LOGGER << "Receive " << *p_req << std::endl;
             if (get_last_request() && p_req->m_sn == get_last_request()->m_sn) {
                 LOGGER << "Resend ACK" << std::endl;
                 this->m_socket.send(m_p_ack->serialize());
@@ -260,9 +260,9 @@ Server& Server::instance() {
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
 void spikeSetReset(svLogicVec32 active) {
-    printf("event @ reset: %d\n", active.d); // typedef struct { unsigned int c; unsigned int d;} svLogicVec32;
     if (bool(active.d))
         return;
+    LOGGER << "event @ reset: " << bool(active.d) << std::endl;
     auto& serv = Server::instance();
     do {
     } while (serv.get_next_request()->m_cmd != Request_type::reset);
@@ -274,9 +274,10 @@ void spikeSetReset(svLogicVec32 active) {
 /// \return 0 - no transaction in this clock, 1 - read transaction, 2 - write transaction
 int
 spikeClock(void) {
-    printf("event @ clk\n");
+    LOGGER << "event @ clk" << std::endl;
     auto& serv = Server::instance();
     auto const p_req = serv.get_next_request();
+    LOGGER << *p_req << std::endl;
     switch (p_req->m_cmd) {
         case Request_type::read:
             return 1;
@@ -298,6 +299,7 @@ int
 spikeGetAddress(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
+    LOGGER << "spikeGetAddress: " << int(p_req->m_address) << std::endl;
     return p_req->m_address;
 }
 
@@ -307,6 +309,7 @@ int
 spikeGetSize(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
+    LOGGER << "spikeGetSize: " << int(p_req->m_size) << std::endl;
     return p_req->m_size;
 }
 
@@ -316,6 +319,7 @@ int
 spikeGetData(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
+    LOGGER << "spikeGetData: " << int(p_req->m_data) << std::endl;
     return p_req->m_data;
 }
 
@@ -323,11 +327,13 @@ spikeGetData(void) {
 /// \param data read data
 void spikeSetData(int data) {
     auto& serv = Server::instance();
+    LOGGER << "spikeSetData: " << data << std::endl;
     serv.ack(data);
 }
 
 /// Each clock with or without transaction should be finished with call of this function
 void spikeEndClock(void) {
     auto& serv = Server::instance();
+    LOGGER << "spikeEndClock" << std::endl;
     serv.send_ack();
 }
