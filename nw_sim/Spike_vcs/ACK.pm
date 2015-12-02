@@ -8,12 +8,14 @@ sub new {
 sub deserialize {
     my $class = shift;
     my $buffer = shift;
-    my ($sn, $cmd, $rest) = unpack('C1 A1 a*', $buffer);
+    return undef unless length($buffer) >= 2;
+    my ($sn, $cmd, $rest) = unpack('C1 C1 a*', $buffer);
     my $res = {sn => $sn};
-    my %decode = ('r' => 'read', 'w' => 'write', 'R' => 'reset', 'c' => 'skip');
-    $res->{cmd} = exists $decode{$cmd} ? $decode{$cmd} : 'c';
-    if ($cmd =~ /^(?:R|r)$/) {
-        my ($data) = unpack('x2 N', $rest);
+    my %decode = (1 => 'read', 2 => 'write', 3 => 'reset', 0 => 'skip');
+    $res->{cmd} = exists $decode{$cmd} ? $decode{$cmd} : 0;
+    if ($cmd == 1 || $cmd == 3) {
+        return undef unless length($rest) == 6;
+        my ($data) = unpack('x2 N1', $rest);
         $res->{data} = $data;
     }
     return bless $res, $class;
@@ -22,12 +24,12 @@ sub deserialize {
 sub serialize {
     my $self = shift;
     my $cmd = 'c';
-    my %encode = ('read' => 'r', 'reset' => 'R', 'write' => 'w', 'skip' => 'c');
+    my %encode = ('read' => 1, 'reset' => 3, 'write' => 2, 'skip' => 0);
     $cmd = $encode{$self->{cmd}} if exists $encode{$self->{cmd}};
     if ($self->{cmd} =~ /^(?:read|reset)$/) {
-        return pack('C1 A1 x2 N1', $self->{sn}, $cmd, $self->{data} + 0);
+        return pack('C1 C1 x2 N1', $self->{sn}, $cmd, $self->{data} + 0);
     } else {
-        return pack('C1 A1', $self->{sn}, $cmd);
+        return pack('C1 C1', $self->{sn}, $cmd);
     }
 }
 

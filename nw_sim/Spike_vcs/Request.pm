@@ -9,10 +9,10 @@ sub new {
 sub deserialize {
     my $class = shift;
     my $buffer = shift;
-    my ($sn, $cmd, $rest) = unpack('C1 A1 a*', $buffer);
+    my ($sn, $cmd, $rest) = unpack('C1 C1 a*', $buffer);
     my $res = {sn => $sn, cmd =>'skip'};
-    my %decode = ('r' => 'read', 'w' => 'write', 'R' => 'reset', 'c' => 'skip');
-    $res->{cmd} = $decode{$cmd} if exists $decode{$cmd};
+    my %decode = (1 => 'read', 2 => 'write', 3 => 'reset', 0 => 'skip');
+    $res->{cmd} = exists $decode{$cmd} ? $decode{$cmd} : 'skip';
     if ($cmd =~ /^(?:r|w)$/) {
         my ($size, $addr, $rest1) = unpack('C1 x1 N1 a*', $rest);
         @{$res}{qw(addr size)} = ($addr, $size);
@@ -25,14 +25,14 @@ sub deserialize {
 }
 sub serialize {
     my $self = shift;
-    my %encode = ('read' => 'r', 'reset' => 'R', 'write' => 'w', 'skip' => 'c');
-    my $cmd = exists $encode{$self->{cmd}} ? $encode{$self->{cmd}} : 'c';
+    my %encode = ('read' => 1, 'reset' => 3, 'write' => 2, 'skip' => 0);
+    my $cmd = exists $encode{$self->{cmd}} ? $encode{$self->{cmd}} : 0;
     if ($self->{cmd} =~ /^(?:write)$/) {
-        return pack('C1 A1 C1 x1 N1 N1', $self->{sn}, $cmd, @{$self}{qw(size addr data)});
+        return pack('C1 C1 C1 x1 N1 N1', $self->{sn}, $cmd, @{$self}{qw(size addr data)});
     } elsif ($self->{cmd} =~ /^(?:read)$/) {
-        return pack('C1 A1 C1 x1 N1', $self->{sn}, $cmd, @{$self}{qw(size addr)});
+        return pack('C1 C1 C1 x1 N1', $self->{sn}, $cmd, @{$self}{qw(size addr)});
     } else {
-        return pack('C1 A1', $self->{sn}, $cmd);
+        return pack('C1 C1', $self->{sn}, $cmd);
     }
 }
 sub to_string {

@@ -1,6 +1,6 @@
 package Client;
 use fields qw(_socket _last_request _sn);
-our $trace = 0;
+our $trace = 1;
 sub new {
     my Client $self = shift;
     $self = fields::new($self) unless ref $self;
@@ -47,10 +47,10 @@ sub request {
         my $nfound = select($rout=$rin, $wout=$win, $eout=$ein, $timeout);
         next unless $nfound && vec($rout, fileno($self->{_socket}), 1);
         $self->{_socket}->recv($received, 1024);
-        printf("CLNT: Received ACK %s\n", $received) if $trace;
         use Spike_vcs::ACK;
         my $ack = deserialize ACK ($received);
-        if (defined($ack) && $ack->{sn} == $sn) {
+        if (defined($ack) && ($ack->{sn} == $sn)) {
+            printf("CLNT: Received ACK %s\n", $ack->to_string()) if $trace;
             return $ack;
         }
     }
