@@ -1,6 +1,6 @@
 package Client;
 use fields qw(_socket _last_request _sn);
-our $trace = 1;
+our $trace = 0;
 sub new {
     my Client $self = shift;
     $self = fields::new($self) unless ref $self;
