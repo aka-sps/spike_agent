@@ -88,11 +88,12 @@ struct Request
     friend std::ostream&
         operator << (std::ostream& a_ostr, Request const& a_req) {
         a_ostr
-            << "sn = " << std::dec << unsigned(a_req.m_sn)
-            << "cmd = " << unsigned(a_req.m_cmd)
-            << "address = " << std::hex << a_req.m_sn << std::dec
-            << "size = " << unsigned(a_req.m_size)
-            << "data = " << std::hex << unsigned(a_req.m_data) << std::dec;
+            << "Request"
+            << " sn = " << std::dec << unsigned(a_req.m_sn)
+            << " cmd = " << unsigned(a_req.m_cmd)
+            << " address = " << std::hex << a_req.m_address << std::dec
+            << " size = " << unsigned(a_req.m_size)
+            << " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
         return a_ostr;
     }
 };
