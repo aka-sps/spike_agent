@@ -206,7 +206,7 @@ initial begin
                 
                 // Convert to logic
                 CPUNC_AWADDR = unsigned'(spikeAddr);
-                // Check allignment
+                // Check alignment
                 case (spikeSize)
                     1 : begin 
                         // It is ok
@@ -221,7 +221,7 @@ initial begin
                         assert (0) else $error("Spike Agent: Wrong size accesss for Writing: %d",spikeSize); 
                     end
                 endcase
-                
+
                 // Start writing
                 CPUNC_AWVALID = 1'b1;
                 @(posedge CPUNC_ACLK);
