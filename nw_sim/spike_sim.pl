@@ -10,7 +10,7 @@ use Spike_vcs::Client;
 
 for (;;) {
     my $ack = get Client ()->request("reset");
-    printf("CLNT: For Req <%s> ACK <%s>\n", get Client ()->get_last_request()->to_string(), $ack->to_string());
+    printf("CLNT: Req <%s> ACK <%s>\n", get Client ()->get_last_request()->to_string(), $ack->to_string()) if $trace;
     last if ($ack->{cmd} eq 'reset') && ($ack->{data} == 0);
 }
 my $base = 0xFEED0000;
@@ -38,5 +38,6 @@ for (;;) {
     } else {
         $ack = get Client ()->request("skip");
     }
-    printf("CLNT: For Req <%s> ACK <%s>\n", get Client ()->get_last_request()->to_string(), $ack->to_string()) if $trace > 0;
+    printf("CLNT: Req <%s> ACK <%s>\n", get Client ()->get_last_request()->to_string(), $ack->to_string()) if $trace > 0;
+    last if ($ack->{cmd} eq 'reset') && ($ack->{data} != 0);
 }
