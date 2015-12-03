@@ -126,6 +126,8 @@ assign CPUNC_ARCACHE = '0;     // always 000
 assign CPUNC_ARPROT  = '0;     // always 0
 assign CPUNC_ARQOS   = '0;     // always 000
 
+logic [1:0]             access_offset;
+logic [31:0]            access_address;
 
 initial begin
 
@@ -157,17 +159,20 @@ initial begin
                 spikeSize  = spikeGetSize();
                 
                 // Convert to logic
-                CPUNC_ARADDR = unsigned'(spikeAddr);
+                access_address = unsigned'(spikeAddr);
+                CPUNC_ARADDR  = access_address;
+                access_offset = access_address[1:0];
+                CPUNC_ARADDR[1:0] = 2'b00;
                 // Check allignment
                 case (spikeSize)
                     1 : begin 
                         // It is ok
                     end
                     2 : begin
-                        assert (CPUNC_ARADDR[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD");
+                        assert (access_offset[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD");
                     end
                     4 : begin
-                        assert (CPUNC_ARADDR[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD");
+                        assert (access_offset[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD");
                     end
                     default : begin
                         assert (0) else $error("Spike Agent: Wrong size accesss for Reading: %d",spikeSize); 
@@ -192,10 +197,31 @@ initial begin
                 #1
                 assert (CPUNC_RRESP == '0) else $error("Spike Agent: Read transaction completed with Error Response");
                 CPUNC_RREADY = 1'b0;
-
-
                 // Return RDATA
-                spikeSetData(int'(CPUNC_RDATA));
+                case (spikeSize)
+                    1: begin
+                        case (access_offset)
+                            2'b00 : spikeSetData(int'({24'h000000, CPUNC_RDATA[7:0]}));
+                            2'b01 : spikeSetData(int'({24'h000000, CPUNC_RDATA[15:8]}));
+                            2'b10 : spikeSetData(int'({24'h000000, CPUNC_RDATA[23:16]}));
+                            2'b11 : spikeSetData(int'({24'h000000, CPUNC_RDATA[31:24]}));
+                            default : begin
+                            end
+                        endcase
+                    end
+                    2: begin
+                        if (access_offset[1] == 1'b0) begin
+                            spikeSetData(int'({16'h0000, CPUNC_RDATA[15:0]}));
+                        end else begin
+                            spikeSetData(int'({16'h0000, CPUNC_RDATA[31:16]}));
+                        end
+                    end
+                    4: begin
+                        spikeSetData(int'(CPUNC_RDATA));
+                    end
+
+                endcase
+
             end    
 
             2 : begin
@@ -205,20 +231,24 @@ initial begin
                 spikeWdata = spikeGetData();
                 
                 // Convert to logic
-                CPUNC_AWADDR = unsigned'(spikeAddr);
+                access_address = unsigned'(spikeAddr);
+                CPUNC_AWADDR  = access_address;
+                access_offset = access_address[1:0];
+                CPUNC_AWADDR[1:0] = 2'b00;
+
                 // Check alignment
                 case (spikeSize)
                     1 : begin 
                         // It is ok
                     end
                     2 : begin
-                        assert (CPUNC_AWADDR[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD");
+                        assert (access_offset[0] == 1'b0) else $error("Spike Agent: Unaligned addres for read HWORD; Addr = %x, size = %d", spikeAddr, spikeSize);
                     end
                     4 : begin
-                        assert (CPUNC_AWADDR[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD");
+                        assert (access_offset[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for read WORD; Addr = %x, size = %d", spikeAddr, spikeSize);
                     end
                     default : begin
-                        assert (0) else $error("Spike Agent: Wrong size accesss for Writing: %d",spikeSize); 
+                        assert (0) else $error("Spike Agent: Wrong size accesss for Rading; Addr = %x, size = %d", spikeAddr, spikeSize);
                     end
                 endcase
 
@@ -249,6 +279,20 @@ initial begin
                         CPUNC_WSTRB = 4'b1111;
                     end
                     default : begin
+                    end
+                endcase
+                case (spikeSize)
+                    1 : begin 
+                        // It is ok
+                    end
+                    2 : begin
+                        assert (access_offset[0] == 1'b0) else $error("Spike Agent: Unaligned addres for write HWORD; Addr = %x, size = %d", spikeAddr, spikeSize);
+                    end
+                    4 : begin
+                        assert (access_offset[1:0] == 2'b00) else $error("Spike Agent: Unaligned addres for write WORD; Addr = %x, size = %d", spikeAddr, spikeSize);
+                    end
+                    default : begin
+                        assert (0) else $error("Spike Agent: Wrong size accesss for Writing; Addr = %x, size = %d", spikeAddr, spikeSize);
                     end
                 endcase
                 @(posedge CPUNC_ACLK);
