@@ -42,8 +42,12 @@ sub to_string {
         push @fields, @{$self}{qw(addr size)};
         if (exists  $self->{data}) {
             push @fields, $self->{'data'};
+            return sprintf('%d:%s:%08x:%d:%08x', @fields);
+        } else {
+            return sprintf('%d:%s:%08x:%d', @fields);
         }
+    } else {
+        return sprintf('%d:%s', @fields);
     }
-    return join(':', @fields);
 }
 1;

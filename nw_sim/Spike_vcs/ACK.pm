@@ -38,7 +38,9 @@ sub to_string {
     my @fields = @{$self}{qw(sn cmd)};
     if (exists $self->{'data'}) {
         push @fields, $self->{'data'};
-    }        
-    return join(':', @fields);
+        return sprintf('%d:%s:%08x', @fields);
+    } else {
+        return sprintf('%d:%s', @fields);
+    }
 }
 1;
