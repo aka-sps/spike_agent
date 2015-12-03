@@ -194,10 +194,6 @@ initial begin
                 while (CPUNC_RVALID == 1'b0) begin
                     @(posedge CPUNC_ACLK);
                 end
-                #1
-                assert (CPUNC_RRESP == '0) else $error("Spike Agent: Read transaction completed with Error Response");
-                CPUNC_RREADY = 1'b0;
-                // Return RDATA
                 case (spikeSize)
                     1: begin
                         case (access_offset)
@@ -222,6 +218,10 @@ initial begin
 
                 endcase
 
+                #1
+                assert (CPUNC_RRESP == '0) else $error("Spike Agent: Read transaction completed with Error Response");
+                CPUNC_RREADY = 1'b0;
+                // Return RDATA
             end    
 
             2 : begin
