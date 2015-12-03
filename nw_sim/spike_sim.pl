@@ -14,25 +14,28 @@ for (;;) {
     last if ($ack->{cmd} eq 'reset') && ($ack->{data} == 0);
 }
 my $base = 0xFEED0000;
-my $limit = 1 << 12;
+my $limit_bytes = 1 << 12;
 for (;;) {
     my $r = int(rand(4));
     my $ack = undef;
-    if ($r == 0) {
-        my $shift = int(rand(3));
-        my $size = 1 << $shift;
-        my $offset = int(rand($limit >> $shift)) << $shift;
-        $ack = get Client ()->request("read", $base + $offset, $size);
-    }
-    elsif ($r == 1) {
-        my $shift = int(rand(3));
-        my $size = 1 << $shift;
-        my $offset = int(rand($limit >> $shift)) << $shift;
-        my $shift2 = 8 * ($offset & 0x3);
-        my $data = int(rand(1 << (8 * ($shift + 1)))) << $shift2;
-        $ack = get Client ()->request("write", $base + $offset, $size, $data);
-    }
-    else {
+    if ($r < 2) {
+        my $log2_byte_size = int(rand(3));
+        # my $log2_byte_size = 2;
+        my $size_bytes = 1 << $log2_byte_size;
+        my $num_cells = int($limit_bytes / $size_bytes);
+        my $offset = int(rand($num_cells)) * $size_bytes;
+        if ($r == 0) {
+            $ack = get Client ()->request("read", $base + $offset, $size_bytes);
+        } else {
+            my $size_bits = 8 * $size_bytes;
+            my $data = int(rand(1 << $size_bits));
+            my $repeated_data = 0;
+            for (1 .. (4 / $size_bytes)) {
+                $repeated_data = ($repeated_data << $size_bits) | $data;
+            }
+            $ack = get Client ()->request("write", $base + $offset, $size_bytes, $repeated_data);
+        }
+    } else {
         $ack = get Client ()->request("skip");
     }
     printf("CLNT: For Req <%s> ACK <%s>\n", get Client ()->get_last_request()->to_string(), $ack->to_string()) if $trace > 0;
