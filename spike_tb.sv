@@ -115,7 +115,9 @@ initial begin
     #100ns rst_n = 1'b1;
 
     #1ms
+    #100ns rst_n = 1'b0;
     $display("TB: finish");
+    #100 ns
     $finish;       
 end
 

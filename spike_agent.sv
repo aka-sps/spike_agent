@@ -105,6 +105,7 @@ initial begin
    
     @(negedge CPUNC_ARESETn);
     $display("Spike Agent: Reset is coming!!!");
+    spikeSetReset(1'b1);
 end
 
 assign CPUNC_AWID    = '0;     //
