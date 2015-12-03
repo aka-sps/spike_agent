@@ -22,7 +22,7 @@ enum class Request_type : uint8_t
     skip = 0,
     read = 1,
     write = 2,
-    reset = 3,
+    get_reset_state = 3,
 };
 
 struct Request
@@ -47,7 +47,7 @@ struct Request
             return res_type();
         }
         uint8_t const sn = a_buf[0];
-        if (a_buf[1] > static_cast<uint8_t>(Request_type::reset)) {
+        if (a_buf[1] > static_cast<uint8_t>(Request_type::get_reset_state)) {
             LOGGER << "a_buf[1] > static_cast<uint8_t>(Request_type::reset) (" << a_buf[1] << ")" << std::endl;
             return res_type();
         }
@@ -123,7 +123,7 @@ struct ACK
         res.push_back(static_cast<uint8_t>(m_cmd));
         switch (this->m_cmd) {
             case Request_type::read:
-            case Request_type::reset:
+            case Request_type::get_reset_state:
                 {
                     res.resize(8);
                     res[4] = static_cast<uint8_t>(this->m_data >> (8 * 3));
@@ -146,7 +146,7 @@ struct ACK
             "ACK" <<
             " sn = " << std::dec << unsigned(a_req.m_sn) <<
             " cmd = " << unsigned(a_req.m_cmd);
-        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::reset) {
+        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::get_reset_state) {
             a_ostr
                 << " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
         }
@@ -209,20 +209,24 @@ public:
         get_last_request()const {
         return m_p_req;
     }
+    void
+        send_ack()const {
+        // LOGGER << *m_p_ack << std::endl;
+        this->m_socket.send(m_p_ack->serialize());
+    }
     std::shared_ptr<Request const>
         get_next_request() {
         for (;;) {
             std::shared_ptr<Request const> const p_req = Request::deserialize(this->m_socket.recv());
             if (!p_req) {
                 LOGGER << "Bad Request" << std::endl;
-                continue;
-            }
-            // LOGGER << "Receive " << *p_req << std::endl;
-            if (get_last_request() && p_req->m_sn == get_last_request()->m_sn) {
+            } else if (this->m_p_ack && this->m_p_ack->m_sn == p_req->m_sn) {
                 LOGGER << "Resend ACK" << std::endl;
-                this->m_socket.send(m_p_ack->serialize());
+                send_ack();
             } else {
                 this->m_p_req = p_req;
+                this->m_p_ack.reset();
+                // LOGGER << "Receive: " << *this->m_p_req << std::endl;
                 break;
             }
         }
@@ -237,11 +241,6 @@ public:
         ack(uint32_t a_data = 0) {
         typedef std::shared_ptr<ACK> res_type;
         this->m_p_ack = res_type(new ACK(this->get_last_request()->m_sn, this->get_last_request()->m_cmd, a_data));
-    }
-    void
-        send_ack()const {
-        LOGGER << *m_p_ack << std::endl;
-        this->m_socket.send(m_p_ack->serialize());
     }
 private:
     Server() {}
@@ -259,15 +258,16 @@ Server& Server::instance() {
 
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
-void spikeSetReset(svLogicVec32 active) {
-    if (bool(active.d))
-        return;
-    // LOGGER << "event @ reset: " << bool(active.d) << std::endl;
+void spikeSetReset(int active) {
+    uint32_t const data = active;
+    LOGGER << "event @ reset: " << data << std::endl;
     auto& serv = Server::instance();
     do {
-    } while (serv.get_next_request()->m_cmd != Request_type::reset);
-    serv.ack(0);
+        // LOGGER << "get_next_request" << std::endl;
+    } while (!serv.get_next_request());
+    serv.ack(Request_type::get_reset_state, data);
     serv.send_ack();
+    LOGGER << "reset done: " << data << std::endl;
 }
 
 /// Need call each clock
@@ -277,15 +277,15 @@ spikeClock(void) {
     // LOGGER << "event @ clk" << std::endl;
     auto& serv = Server::instance();
     auto const p_req = serv.get_next_request();
-    LOGGER << *p_req << std::endl;
+    // LOGGER << *p_req << std::endl;
     switch (p_req->m_cmd) {
         case Request_type::read:
             return 1;
         case Request_type::write:
             serv.ack();
             return 2;
-        case Request_type::reset:
-            serv.ack(Request_type::reset, 0);
+        case Request_type::get_reset_state:
+            serv.ack(Request_type::get_reset_state, 0);
             return 0;
         default:
             serv.ack();
@@ -299,7 +299,7 @@ int
 spikeGetAddress(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    LOGGER << "spikeGetAddress: " << std::hex << p_req->m_address << std::dec << std::endl;
+    // LOGGER << "spikeGetAddress: " << std::hex << p_req->m_address << std::dec << std::endl;
     return p_req->m_address;
 }
 
@@ -309,7 +309,7 @@ int
 spikeGetSize(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    LOGGER << "spikeGetSize: " << int(p_req->m_size) << std::endl;
+    // LOGGER << "spikeGetSize: " << int(p_req->m_size) << std::endl;
     return p_req->m_size;
 }
 
@@ -319,7 +319,7 @@ int
 spikeGetData(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    LOGGER << "spikeGetData: " << std::hex << p_req->m_data << std::dec << std::endl;
+    // LOGGER << "spikeGetData: " << std::hex << p_req->m_data << std::dec << std::endl;
     return p_req->m_data;
 }
 
@@ -327,13 +327,13 @@ spikeGetData(void) {
 /// \param data read data
 void spikeSetData(int data) {
     auto& serv = Server::instance();
-    LOGGER << "spikeSetData: " << std::hex << data << std::dec << std::endl;
+    // LOGGER << "spikeSetData: " << std::hex << data << std::dec << std::endl;
     serv.ack(data);
 }
 
 /// Each clock with or without transaction should be finished with call of this function
 void spikeEndClock(void) {
     auto& serv = Server::instance();
-    LOGGER << "spikeEndClock" << std::endl;
+    // LOGGER << "spikeEndClock" << std::endl;
     serv.send_ack();
 }

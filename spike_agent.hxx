@@ -8,7 +8,7 @@ extern "C" {
 
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
-void spikeSetReset(svLogicVec32 a);
+void spikeSetReset(int a);
 
 /// Need call each clock 
 /// \return 0 - no transaction in this clock, 1 - read transaction, 2 - write transaction 

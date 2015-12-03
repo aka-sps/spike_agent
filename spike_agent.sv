@@ -62,7 +62,7 @@ module spike_agent #(
 
 /// Send of 0 enables spike execution, send 1 stop spike execution
 /// No return until connect to spike
-import "DPI-C" function void spikeSetReset(logic a);
+import "DPI-C" function void spikeSetReset(int a);
 
 /// Need call each clock 
 /// \return 0 - no transaction in this clock, 1 - read transaction, 2 - write transaction 
@@ -101,11 +101,11 @@ initial begin
     #1
     @(posedge CPUNC_ARESETn);
     $display("Spike Agent: Start Spike after reset");
-    spikeSetReset(1'b0);
+    spikeSetReset(0);
    
     @(negedge CPUNC_ARESETn);
     $display("Spike Agent: Reset is coming!!!");
-    spikeSetReset(1'b1);
+    spikeSetReset(1);
 end
 
 assign CPUNC_AWID    = '0;     //
