@@ -240,7 +240,7 @@ public:
     }
     void
         send_ack()const {
-        // LOGGER << *m_p_ack << std::endl;
+        LOGGER << *m_p_ack << std::endl;
         this->m_socket.send(m_p_ack->serialize());
     }
 private:
@@ -277,7 +277,7 @@ spikeClock(void) {
     // LOGGER << "event @ clk" << std::endl;
     auto& serv = Server::instance();
     auto const p_req = serv.get_next_request();
-    // LOGGER << *p_req << std::endl;
+    LOGGER << *p_req << std::endl;
     switch (p_req->m_cmd) {
         case Request_type::read:
             return 1;
@@ -299,7 +299,7 @@ int
 spikeGetAddress(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    // LOGGER << "spikeGetAddress: " << std::hex << p_req->m_address << std::dec << std::endl;
+    LOGGER << "spikeGetAddress: " << std::hex << p_req->m_address << std::dec << std::endl;
     return p_req->m_address;
 }
 
@@ -309,7 +309,7 @@ int
 spikeGetSize(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    // LOGGER << "spikeGetSize: " << int(p_req->m_size) << std::endl;
+    LOGGER << "spikeGetSize: " << int(p_req->m_size) << std::endl;
     return p_req->m_size;
 }
 
@@ -319,7 +319,7 @@ int
 spikeGetData(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    // LOGGER << "spikeGetData: " << std::hex << p_req->m_data << std::dec << std::endl;
+    LOGGER << "spikeGetData: " << std::hex << p_req->m_data << std::dec << std::endl;
     return p_req->m_data;
 }
 
@@ -327,13 +327,13 @@ spikeGetData(void) {
 /// \param data read data
 void spikeSetData(int data) {
     auto& serv = Server::instance();
-    // LOGGER << "spikeSetData: " << std::hex << data << std::dec << std::endl;
+    LOGGER << "spikeSetData: " << std::hex << data << std::dec << std::endl;
     serv.ack(data);
 }
 
 /// Each clock with or without transaction should be finished with call of this function
 void spikeEndClock(void) {
     auto& serv = Server::instance();
-    // LOGGER << "spikeEndClock" << std::endl;
+    LOGGER << "spikeEndClock" << std::endl;
     serv.send_ack();
 }
