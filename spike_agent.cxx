@@ -299,7 +299,7 @@ int
 spikeGetAddress(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    LOGGER << "spikeGetAddress: " << int(p_req->m_address) << std::endl;
+    LOGGER << "spikeGetAddress: " << std::hex << p_req->m_address << std::dec << std::endl;
     return p_req->m_address;
 }
 
@@ -319,7 +319,7 @@ int
 spikeGetData(void) {
     auto& serv = Server::instance();
     auto const p_req = serv.get_last_request();
-    LOGGER << "spikeGetData: " << int(p_req->m_data) << std::endl;
+    LOGGER << "spikeGetData: " << std::hex << p_req->m_data << std::dec << std::endl;
     return p_req->m_data;
 }
 
@@ -327,7 +327,7 @@ spikeGetData(void) {
 /// \param data read data
 void spikeSetData(int data) {
     auto& serv = Server::instance();
-    LOGGER << "spikeSetData: " << data << std::endl;
+    LOGGER << "spikeSetData: " << std::hex << data << std::dec << std::endl;
     serv.ack(data);
 }
 
