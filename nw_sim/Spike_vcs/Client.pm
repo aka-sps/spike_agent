@@ -34,7 +34,7 @@ sub request {
     my $sn = $self->_new_sn();
     use Spike_vcs::Request;
     $self->{_last_request} = new Request ($sn, @_);
-
+    printf("CLNT: Create request: %s\n", $self->get_last_request()->to_string()) if $trace;
     my $rin = '';
     vec($rin, fileno($self->{_socket}), 1) = 1;
     my $win = '';
@@ -42,11 +42,13 @@ sub request {
     my $timeout = 1;
     my $received = undef;
     for (;;) {
-        $self->{_socket}->send($self->{_last_request}->serialize());
+        $self->{_socket}->send($self->get_last_request()->serialize());
+        printf("CLNT: Send request: %s\n", $self->get_last_request()->to_string()) if $trace;
         my ($rout, $wout, $eout);
         my $nfound = select($rout=$rin, $wout=$win, $eout=$ein, $timeout);
         next unless $nfound && vec($rout, fileno($self->{_socket}), 1);
         $self->{_socket}->recv($received, 1024);
+        printf("CLNT: Receive: %d bytes\n", length($received)) if $trace;
         use Spike_vcs::ACK;
         my $ack = deserialize ACK ($received);
         if (defined($ack) && ($ack->{sn} == $sn)) {
