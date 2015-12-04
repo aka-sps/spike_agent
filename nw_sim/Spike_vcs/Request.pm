@@ -13,10 +13,10 @@ sub deserialize {
     my $res = {sn => $sn, cmd =>'skip'};
     my %decode = (1 => 'read', 2 => 'write', 3 => 'reset', 0 => 'skip');
     $res->{cmd} = exists $decode{$cmd} ? $decode{$cmd} : 'skip';
-    if ($cmd =~ /^(?:r|w)$/) {
+    if ($cmd ==1 || $cmd == 2) {
         my ($size, $addr, $rest1) = unpack('C1 x1 N1 a*', $rest);
         @{$res}{qw(addr size)} = ($addr, $size);
-        if ($cmd =~ /^(?:w)$/) {
+        if ($cmd == 2) {
             my ($data) = unpack('N1', $rest1);
             $res->{data} = $data;
         }
