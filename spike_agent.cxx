@@ -14,6 +14,7 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
+#include <cstdint>
 
 #define LOGGER std::cerr << __FILE__ << "(" << __LINE__ << "): "
 namespace {
@@ -25,9 +26,11 @@ enum class Request_type : uint8_t
     get_reset_state = 3,
 };
 
-struct Request
+class Request
 {
-    Request() = default;
+    Request(Request const&) = delete;
+    Request const& operator = (Request const&) = delete;
+
     Request(uint8_t _sn,
             Request_type _cmd,
             uint32_t _address = 0,
@@ -38,7 +41,7 @@ struct Request
             , m_address(_address)
             , m_size(_size)
             , m_data(_data) {}
-
+public:
     static std::shared_ptr<Request const>
         deserialize(std::vector<uint8_t> const& a_buf) {
         typedef std::shared_ptr<Request const> res_type;
@@ -104,17 +107,19 @@ struct Request
     }
 };
 
-struct ACK
+class ACK
 {
-    ACK() = default;
+    ACK(ACK const&) = delete;
+    ACK& operator = (ACK const&) = delete;
     ACK(uint8_t a_sn, Request_type a_cmd, uint32_t a_data = 0)
         : m_sn(a_sn)
         , m_cmd(a_cmd)
         , m_data(a_data) {}
-    ACK(Request const& _req)
-        : m_sn(_req.m_sn)
-        , m_cmd(_req.m_cmd) {}
-
+public:
+    static std::shared_ptr<ACK const>
+        create(uint8_t a_sn, Request_type a_cmd, uint32_t a_data = 0) {
+        return std::shared_ptr<ACK const>(new ACK(a_sn, a_cmd, a_data));
+    }
     std::vector<uint8_t> serialize()const {
         typedef std::vector<uint8_t> res_type;
         res_type res;
@@ -234,20 +239,18 @@ public:
     }
     void
         ack(Request_type const a_cmd, uint32_t a_data = 0) {
-        typedef std::shared_ptr<ACK> res_type;
-        this->m_p_ack = res_type(new ACK(this->get_last_request()->m_sn, a_cmd, a_data));
+        this->m_p_ack = ACK::create(this->get_last_request()->m_sn, a_cmd, a_data);
     }
     void
         ack(uint32_t a_data = 0) {
-        typedef std::shared_ptr<ACK> res_type;
-        this->m_p_ack = res_type(new ACK(this->get_last_request()->m_sn, this->get_last_request()->m_cmd, a_data));
+        this->m_p_ack = ACK::create(this->get_last_request()->m_sn, this->get_last_request()->m_cmd, a_data);
     }
 private:
     Server() {}
 
     Socket m_socket;
     std::shared_ptr<Request const> m_p_req;
-    std::shared_ptr<ACK> m_p_ack;
+    std::shared_ptr<ACK const> m_p_ack;
 };
 
 Server& Server::instance() {
