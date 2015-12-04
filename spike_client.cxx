@@ -10,6 +10,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 
+#define LOGGER std::cerr << __FILE__ << "(" << __LINE__ << "): "
 namespace {
 enum class Request_type : uint8_t
 {
@@ -36,13 +37,53 @@ class Request
             , m_data(_data) {}
 public:
     static std::shared_ptr<Request const>
-        create(uint8_t _sn,
-        Request_type _cmd,
-        uint32_t _address = 0,
-        uint8_t _size = 0,
-        uint32_t _data = 0);
+        create(uint8_t a_sn,
+        Request_type a_cmd,
+        uint32_t a_address = 0,
+        uint8_t a_size = 0,
+        uint32_t a_data = 0) {
+        typedef std::shared_ptr<Request const> result_type;
+        return result_type(new Request(a_sn, a_cmd, a_address, a_size, a_data));
+    }
     std::vector<uint8_t>
-        serialize()const;
+        serialize()const {
+        typedef std::vector<uint8_t> res_type;
+        res_type res;
+        res.reserve(12);
+        res.push_back(m_sn);
+        res.push_back(static_cast<uint8_t>(m_cmd));
+        switch (this->m_cmd) {
+            case Request_type::read:
+                {
+                    res.resize(8, 0);
+                    res[2] = this->m_size;
+                    res[4] = static_cast<uint8_t>(this->m_address >> (8 * 3));
+                    res[5] = static_cast<uint8_t>(this->m_address >> (8 * 2));
+                    res[6] = static_cast<uint8_t>(this->m_address >> (8 * 1));
+                    res[7] = static_cast<uint8_t>(this->m_address >> (8 * 0));
+                }
+                break;
+            case Request_type::write:
+                {
+                    res.resize(12, 0);
+                    res[2] = this->m_size;
+                    res[4] = static_cast<uint8_t>(this->m_address >> (8 * 3));
+                    res[5] = static_cast<uint8_t>(this->m_address >> (8 * 2));
+                    res[6] = static_cast<uint8_t>(this->m_address >> (8 * 1));
+                    res[7] = static_cast<uint8_t>(this->m_address >> (8 * 0));
+
+                    res[8] = static_cast<uint8_t>(this->m_data >> (8 * 3));
+                    res[9] = static_cast<uint8_t>(this->m_data >> (8 * 2));
+                    res[10] = static_cast<uint8_t>(this->m_data >> (8 * 1));
+                    res[11] = static_cast<uint8_t>(this->m_data >> (8 * 0));
+                }
+                break;
+            default:
+                break;
+        }
+        return res;
+
+    }
 
     uint8_t m_sn;
     Request_type m_cmd;
@@ -71,16 +112,58 @@ public:
 
 class ACK
 {
-    ACK(){}
+    ACK(uint8_t a_sn, Request_type a_cmd, uint32_t a_data = 0)
+        : m_sn(a_sn)
+        , m_cmd(a_cmd)
+        , m_data(a_data) {}
     ACK(ACK const&) = delete;
     ACK operator = (ACK const&) = delete;
 public:
     static std::shared_ptr<ACK const>
-        deserialize(std::vector<uint8_t> const&);
+        deserialize(std::vector<uint8_t> const& a_buf) {
+        typedef std::shared_ptr<ACK const> res_type;
+        if (a_buf.size() < 2) {
+            LOGGER << "a_buf.size() < 2 (" << a_buf.size() << ")" << std::endl;
+            return res_type();
+        }
+        uint8_t const sn = a_buf[0];
+        if (a_buf[1] > static_cast<uint8_t>(Request_type::get_reset_state)) {
+            LOGGER << "a_buf[1] > static_cast<uint8_t>(Request_type::reset) (" << a_buf[1] << ")" << std::endl;
+            return res_type();
+        }
+        Request_type const cmd = static_cast<Request_type>(a_buf[1]);
+        switch (cmd) {
+            case Request_type::read:
+            case Request_type::get_reset_state:
+                {
+                    if (a_buf.size() < 8) {
+                        LOGGER << "a_buf.size() < 8 (" << a_buf.size() << ")" << std::endl;
+                    }
+                    uint32_t const data = (((((a_buf[4] << 8) | a_buf[5]) << 8) | a_buf[6]) << 8) | a_buf[7];
+                    return res_type(new ACK(sn, cmd, data));
+                }
+                break;
+            default:
+                return res_type(new ACK(sn, cmd));
+        }
+    }
 
     uint8_t m_sn;
     Request_type m_cmd;
     uint32_t m_data;
+
+    friend std::ostream&
+        operator << (std::ostream& a_ostr, ACK const& a_ack) {
+        a_ostr <<
+            "Request" <<
+            " sn = " << std::dec << unsigned(a_ack.m_sn) <<
+            " cmd = " << unsigned(a_ack.m_cmd);
+        if (a_ack.m_cmd == Request_type::read || a_ack.m_cmd == Request_type::get_reset_state) {
+            a_ostr <<
+                " data = " << std::hex << unsigned(a_ack.m_data) << std::dec;
+        }
+        return a_ostr;
+    }
 };
 
 class Client
@@ -88,11 +171,11 @@ class Client
     class Socket
     {
     public:
-        Socket(uint16_t a_port = 5000)
+        Socket(uint16_t a_port)
             : m_socket(::socket(AF_INET, SOCK_DGRAM, 0)) {
-            m_saddr.sin_family = AF_INET;
-            m_saddr.sin_addr.s_addr = INADDR_LOOPBACK;
-            m_saddr.sin_port = ::htons(a_port);
+            this->m_saddr.sin_family = AF_INET;
+            this->m_saddr.sin_addr.s_addr = ::htonl(INADDR_LOOPBACK);
+            this->m_saddr.sin_port = ::htons(a_port);
         }
 
         ~Socket() {
@@ -103,22 +186,24 @@ class Client
             fd_set wset;
             FD_ZERO(&wset);
 
-            fd_set rset;
-            FD_ZERO(&rset);
+            fd_set rset = wset;
             FD_SET(this->m_socket, &rset);
 
             fd_set eset = rset;
+
             timeval timeout = {1, 0};
+            LOGGER << "Select..." << std::endl;
             int const ready = ::select(this->m_socket, &rset, &wset, &eset, &timeout);
             typedef std::shared_ptr<std::vector<uint8_t> > result_type;
             if (ready != 1 || !FD_ISSET(this->m_socket, &rset)) {
+                LOGGER << "...no answer!" << std::endl;
                 return result_type();
             }
             result_type res(new std::vector<uint8_t>(a_len));
             std::vector<uint8_t>& buf = *res;
-            // LOGGER << "recvfrom..." << std::endl;
+            LOGGER << "recvfrom..." << std::endl;
             ssize_t const size = ::recvfrom(this->m_socket + 1, &buf[0], buf.size(), 0, nullptr, 0);
-            // LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
+            LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
             if (size < 0) {
                 return result_type();
             }
@@ -128,13 +213,14 @@ class Client
 
         void
             send(std::vector<uint8_t> const& buf)const {
-            do {
-            } while (::sendto(this->m_socket, &buf[0], buf.size(), 0, reinterpret_cast<struct sockaddr const*>(&this->m_saddr), sizeof this->m_saddr) != buf.size());
+            auto res = ::sendto(this->m_socket, &buf[0], buf.size(), 0, reinterpret_cast<struct sockaddr const*>(&this->m_saddr), sizeof this->m_saddr);
+            if (res < 0) {
+                LOGGER << "Error sendto: " << errno << std::endl;
+            }
         }
 
     private:
         int m_socket;
-        socklen_t m_addrlen;
         struct sockaddr_in m_saddr;
     };
 
@@ -151,13 +237,16 @@ public:
         this->m_sn = (this->m_sn + 1) % 256;
         this->m_p_req = Request::create(this->m_sn, a_cmd, a_address, a_size, a_data);
         for (;;) {
+            LOGGER << "Send" << std::endl;
             this->m_socket.send(this->m_p_req->serialize());
+            LOGGER << "Try to recv..." << std::endl;
             auto const pkt = this->m_socket.recv();
             if (!pkt) {
                 continue;
             }
             auto const ack = ACK::deserialize(*pkt);
             if (ack && ack->m_sn == this->m_sn) {
+                LOGGER << "Request: " << *this->m_p_req << " ACK: " << *this->m_p_req << std::endl;
                 return ack;
             }
         }
@@ -225,8 +314,10 @@ int main(int, char*[]) {
     wait_reset_inactive();
     for (;;) {
         auto const ack = random_transaction();
-        if (ack && ack->m_cmd == Request_type::get_reset_state && ack->m_data != 0) {
-            break;
+        if (ack) {
+            if (ack->m_cmd == Request_type::get_reset_state && ack->m_data != 0) {
+                break;
+            }
         }
     }
     return 0;

@@ -164,11 +164,11 @@ class Server
     class Socket
     {
     public:
-        Socket(uint16_t a_port = 5000)
+        Socket(uint16_t a_port)
             : m_socket(::socket(AF_INET, SOCK_DGRAM, 0)) {
             struct sockaddr_in saddr;
             saddr.sin_family = AF_INET;
-            saddr.sin_addr.s_addr = INADDR_ANY;
+            saddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
             saddr.sin_port = ::htons(a_port);
             if (::bind(this->m_socket, reinterpret_cast<struct sockaddr*>(&saddr), sizeof saddr) < 0)
                 throw std::runtime_error("could not bind to port " + std::to_string(a_port));
@@ -246,7 +246,7 @@ public:
         this->m_p_ack = ACK::create(this->get_last_request()->m_sn, this->get_last_request()->m_cmd, a_data);
     }
 private:
-    Server(uint16_t a_port) :m_socket(a_port){}
+    Server(uint16_t a_port = 5000) :m_socket(a_port){}
 
     Socket m_socket;
     std::shared_ptr<Request const> m_p_req;
