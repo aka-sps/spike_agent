@@ -94,7 +94,7 @@ public:
     friend std::ostream&
         operator << (std::ostream& a_ostr, Request const& a_req) {
         a_ostr <<
-            "Request" <<
+            "Request:" <<
             " sn = " << std::dec << unsigned(a_req.m_sn) <<
             " cmd = " << unsigned(a_req.m_cmd);
         if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::write) {
@@ -155,7 +155,7 @@ public:
     friend std::ostream&
         operator << (std::ostream& a_ostr, ACK const& a_ack) {
         a_ostr <<
-            "Request" <<
+            "ACK:" <<
             " sn = " << std::dec << unsigned(a_ack.m_sn) <<
             " cmd = " << unsigned(a_ack.m_cmd);
         if (a_ack.m_cmd == Request_type::read || a_ack.m_cmd == Request_type::get_reset_state) {
@@ -183,28 +183,32 @@ class Client
         }
         std::shared_ptr<std::vector<uint8_t> >
             recv(size_t const a_len = 1024) {
-            fd_set wset;
-            FD_ZERO(&wset);
 
-            fd_set rset = wset;
+            fd_set rset;
+            FD_ZERO(&rset);
             FD_SET(this->m_socket, &rset);
 
-            fd_set eset = rset;
+            fd_set eset;
+            FD_ZERO(&eset);
+            FD_SET(this->m_socket, &eset);
 
-            timeval timeout = {1, 0};
-            LOGGER << "Select..." << std::endl;
-            int const ready = ::select(this->m_socket, &rset, &wset, &eset, &timeout);
+            struct timeval tmot;
+            tmot.tv_sec = 1;
+            tmot.tv_usec = 0;
+
+            // LOGGER << "Select..." << std::endl;
+            int const ready = ::select(this->m_socket + 1, &rset, nullptr, &eset, &tmot);
             typedef std::shared_ptr<std::vector<uint8_t> > result_type;
             if (ready != 1 || !FD_ISSET(this->m_socket, &rset)) {
-                LOGGER << "...no answer!" << std::endl;
+                LOGGER << "...no answer!" << ready << std::endl;
                 return result_type();
             }
             result_type res(new std::vector<uint8_t>(a_len));
             std::vector<uint8_t>& buf = *res;
-            LOGGER << "recvfrom..." << std::endl;
-            ssize_t const size = ::recvfrom(this->m_socket + 1, &buf[0], buf.size(), 0, nullptr, 0);
-            LOGGER << "...recvfrom receive " << size << " bytes" << std::endl;
+            // LOGGER << "recvfrom..." << std::endl;
+            ssize_t const size = ::recvfrom(this->m_socket, &buf[0], buf.size(), 0, nullptr, 0);
             if (size < 0) {
+                LOGGER << "...recvfrom failure: " << size << std::endl;
                 return result_type();
             }
             buf.resize(size);
@@ -237,16 +241,16 @@ public:
         this->m_sn = (this->m_sn + 1) % 256;
         this->m_p_req = Request::create(this->m_sn, a_cmd, a_address, a_size, a_data);
         for (;;) {
-            LOGGER << "Send" << std::endl;
+            // LOGGER << "Send" << std::endl;
             this->m_socket.send(this->m_p_req->serialize());
-            LOGGER << "Try to recv..." << std::endl;
+            // LOGGER << "Try to recv..." << std::endl;
             auto const pkt = this->m_socket.recv();
             if (!pkt) {
                 continue;
             }
             auto const ack = ACK::deserialize(*pkt);
             if (ack && ack->m_sn == this->m_sn) {
-                LOGGER << "Request: " << *this->m_p_req << " ACK: " << *this->m_p_req << std::endl;
+                LOGGER << *this->m_p_req << " ==> " << *ack << std::endl;
                 return ack;
             }
         }
