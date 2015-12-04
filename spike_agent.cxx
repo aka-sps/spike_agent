@@ -246,7 +246,7 @@ public:
         this->m_p_ack = ACK::create(this->get_last_request()->m_sn, this->get_last_request()->m_cmd, a_data);
     }
 private:
-    Server() {}
+    Server(uint16_t a_port) :m_socket(a_port){}
 
     Socket m_socket;
     std::shared_ptr<Request const> m_p_req;
