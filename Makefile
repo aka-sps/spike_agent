@@ -18,7 +18,7 @@ spike_agent.o \
 : %.o:%.cxx
 	$(CXX) -std=c++11 -I$(SYNOPSYS)/vcsmx_vJ-2014.12-SP3/include -c $< -o $@
 files-to-clean+=spike_agent.o spike_client.o
-
+spike_agent.o spike_client.o:spike_vcs_TL.hxx
 spike_agent.o:spike_agent.hxx
 
 run:./simv
