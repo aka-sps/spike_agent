@@ -17,7 +17,7 @@ enum class Request_type : uint8_t
     skip = 0,
     read = 1,
     write = 2,
-    get_reset_state = 3,
+    reset_state = 3,
 };
 
 class Request
@@ -127,14 +127,14 @@ public:
             return res_type();
         }
         uint8_t const sn = a_buf[0];
-        if (a_buf[1] > static_cast<uint8_t>(Request_type::get_reset_state)) {
+        if (a_buf[1] > static_cast<uint8_t>(Request_type::reset_state)) {
             LOGGER << "a_buf[1] > static_cast<uint8_t>(Request_type::reset) (" << a_buf[1] << ")" << std::endl;
             return res_type();
         }
         Request_type const cmd = static_cast<Request_type>(a_buf[1]);
         switch (cmd) {
             case Request_type::read:
-            case Request_type::get_reset_state:
+            case Request_type::reset_state:
                 {
                     if (a_buf.size() < 8) {
                         LOGGER << "a_buf.size() < 8 (" << a_buf.size() << ")" << std::endl;
@@ -158,7 +158,7 @@ public:
             "ACK:" <<
             " sn = " << std::dec << unsigned(a_ack.m_sn) <<
             " cmd = " << unsigned(a_ack.m_cmd);
-        if (a_ack.m_cmd == Request_type::read || a_ack.m_cmd == Request_type::get_reset_state) {
+        if (a_ack.m_cmd == Request_type::read || a_ack.m_cmd == Request_type::reset_state) {
             a_ostr <<
                 " data = " << std::hex << unsigned(a_ack.m_data) << std::dec;
         }
@@ -268,8 +268,8 @@ Client& Client::instance() {
 void
 wait_reset_inactive() {
     for (;;) {
-        auto const ack = Client::instance().request(Request_type::get_reset_state);
-        if (ack && ack->m_cmd == Request_type::get_reset_state && ack->m_data == 0) {
+        auto const ack = Client::instance().request(Request_type::reset_state);
+        if (ack && ack->m_cmd == Request_type::reset_state && ack->m_data == 0) {
             break;
         }
     }
@@ -315,14 +315,20 @@ random_transaction() {
 }  // namespace
 
 int main(int, char*[]) {
-    wait_reset_inactive();
-    for (;;) {
-        auto const ack = random_transaction();
-        if (ack) {
-            if (ack->m_cmd == Request_type::get_reset_state && ack->m_data != 0) {
-                break;
+    try {
+        wait_reset_inactive();
+        for (;;) {
+            auto const ack = random_transaction();
+            if (ack) {
+                if (ack->m_cmd == Request_type::reset_state && ack->m_data != 0) {
+                    break;
+                }
             }
         }
+        return 0;
+    } catch (std::exception const& a_excpt) {
+        std::cerr << "Unhandled std exception: " << a_excpt.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Unhandled unknown exception" << std::endl;
     }
-    return 0;
 }

@@ -9,7 +9,7 @@ use Getopt::Long;
 use Pod::Usage; 
 use Spike_vcs::Server;
 
-my $trace = 0;
+my $trace = 1;
 
 sub spikeSetReset {
     my $reset = shift;
@@ -63,11 +63,16 @@ sub main {
         my $cmd = spikeClock();
         if ($cmd == 1) {
             my $data = int(rand(1 << 32));
-            printf("SRV: Read %x:%d:%x\n", spikeGetAddress(), spikeGetSize(), $data) if $trace;
+            my $address = spikeGetAddress();
+            my $size = spikeGetSize();
+            printf("SRV: Read %x:%d:%x\n", $address, $size, $data) if $trace;
             spikeSetData($data);
         }
         elsif ($cmd == 2) {
-            printf("SRV: Write %x:%d:%x\n", spikeGetAddress(), spikeGetSize(), spikeGetData()) if $trace;
+            my $address = spikeGetAddress();
+            my $size = spikeGetSize();
+            my $data = spikeGetData();
+            printf("SRV: Write %x:%d:%x\n", $address, $size, $data) if $trace;
         }
         else {
             printf("SRV: Skip\n") if $trace;

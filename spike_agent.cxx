@@ -23,7 +23,7 @@ enum class Request_type : uint8_t
     skip = 0,
     read = 1,
     write = 2,
-    get_reset_state = 3,
+    reset_state = 3,
 };
 
 class Request
@@ -50,7 +50,7 @@ public:
             return res_type();
         }
         uint8_t const sn = a_buf[0];
-        if (a_buf[1] > static_cast<uint8_t>(Request_type::get_reset_state)) {
+        if (a_buf[1] > static_cast<uint8_t>(Request_type::reset_state)) {
             LOGGER << "a_buf[1] > static_cast<uint8_t>(Request_type::reset) (" << a_buf[1] << ")" << std::endl;
             return res_type();
         }
@@ -128,7 +128,7 @@ public:
         res.push_back(static_cast<uint8_t>(m_cmd));
         switch (this->m_cmd) {
             case Request_type::read:
-            case Request_type::get_reset_state:
+            case Request_type::reset_state:
                 {
                     res.resize(8);
                     res[4] = static_cast<uint8_t>(this->m_data >> (8 * 3));
@@ -151,7 +151,7 @@ public:
             "ACK" <<
             " sn = " << std::dec << unsigned(a_req.m_sn) <<
             " cmd = " << unsigned(a_req.m_cmd);
-        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::get_reset_state) {
+        if (a_req.m_cmd == Request_type::read || a_req.m_cmd == Request_type::reset_state) {
             a_ostr
                 << " data = " << std::hex << unsigned(a_req.m_data) << std::dec;
         }
@@ -268,7 +268,7 @@ void spikeSetReset(int active) {
     do {
         // LOGGER << "get_next_request" << std::endl;
     } while (!serv.get_next_request());
-    serv.ack(Request_type::get_reset_state, data);
+    serv.ack(Request_type::reset_state, data);
     serv.send_ack();
     LOGGER << "reset done: " << data << std::endl;
 }
@@ -287,8 +287,8 @@ spikeClock(void) {
         case Request_type::write:
             serv.ack();
             return 2;
-        case Request_type::get_reset_state:
-            serv.ack(Request_type::get_reset_state, 0);
+        case Request_type::reset_state:
+            serv.ack(Request_type::reset_state, 0);
             return 0;
         default:
             serv.ack();
