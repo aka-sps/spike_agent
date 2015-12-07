@@ -1,7 +1,6 @@
 #ifndef SPIKE_AGENT_HXX__
 #define SPIKE_AGENT_HXX__
 
-#include <svdpi.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

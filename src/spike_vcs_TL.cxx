@@ -1,4 +1,5 @@
-#include "spike_vcs_TL.hxx"
+#include "spike_vcs_TL/spike_vcs_TL.hxx"
+
 namespace spike_vcs_TL {
 
 Request::Request(uint8_t _sn, Request_type _cmd, uint32_t _address /*= 0*/, uint8_t _size /*= 0*/, uint32_t _data /*= 0*/) : m_sn(_sn)

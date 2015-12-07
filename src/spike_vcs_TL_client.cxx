@@ -1,12 +1,15 @@
-#include "spike_vcs_TL.hxx"
+#include "spike_vcs_TL/spike_vcs_TL.hxx"
+
 namespace spike_vcs_TL {
 std::shared_ptr<Request const>
-Request::create(uint8_t a_sn, Request_type a_cmd, uint32_t a_address /*= 0*/, uint8_t a_size /*= 0*/, uint32_t a_data /*= 0*/) {
+Request::create(uint8_t a_sn, Request_type a_cmd, uint32_t a_address /*= 0*/, uint8_t a_size /*= 0*/, uint32_t a_data /*= 0*/)
+{
     typedef std::shared_ptr<Request const> result_type;
     return result_type(new Request(a_sn, a_cmd, a_address, a_size, a_data));
 }
 std::vector<uint8_t>
-Request::serialize() const {
+Request::serialize() const
+{
     typedef std::vector<uint8_t> res_type;
     res_type res;
     res.reserve(12);
@@ -44,7 +47,8 @@ Request::serialize() const {
     return res;
 }
 std::shared_ptr<ACK const>
-ACK::deserialize(std::vector<uint8_t> const& a_buf) {
+ACK::deserialize(std::vector<uint8_t> const& a_buf)
+{
     typedef std::shared_ptr<ACK const> res_type;
     if (a_buf.size() < 2) {
         LOGGER << "a_buf.size() < 2 (" << a_buf.size() << ")" << std::endl;
