@@ -1,5 +1,7 @@
 #include "spike_vcs_TL/Socket.hxx"
 
+#include <unistd.h>
+
 namespace spike_vcs_TL {
 Socket::Socket(int __family, int __type, int __protocol)
     : m_socket(::socket(__family, __type, __protocol))
