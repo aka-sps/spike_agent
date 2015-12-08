@@ -72,4 +72,9 @@ ACK::deserialize(std::vector<uint8_t> const& a_buf) {
             return res_type(new ACK(sn, cmd));
     }
 }
+Client& Client::instance()
+{
+    static Client _instance;
+    return _instance;
+}
 }  // namespace spike_vcs_TL

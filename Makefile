@@ -13,20 +13,20 @@ vpath %.hxx include
 files-to-clean+=./simv vc_hdrs.h comp.log
 dirs-to-clean +=simv.daidir csrc
 
-spike_client_test--objs := spike_client.o 
-spike_client_test: $(spike_client_test--objs)
-	$(CXX) $^ spike_vcs_TL.a  -o $@
+spike_client_test--objs := spike_client_test.o 
+spike_client_test: $(spike_client_test--objs) spike_vcs_TL.a
+	$(CXX) $^ -o $@
 files-to-clean += spike_client_test
 
 spike_agent_test--objs := spike_agent_test.o 
-spike_agent_test: $(spike_agent_test--objs)
-	$(CXX) $^ spike_vcs_TL.a -o $@
+spike_agent_test: $(spike_agent_test--objs) spike_vcs_TL.a
+	$(CXX) $^ -o $@
 files-to-clean += spike_agent_test
 
-spike_vcs_TL--objs := spike_agent.o spike_vcs_TL.o spike_vcs_TL_server.o spike_vcs_TL.o spike_vcs_TL_client.o
+spike_vcs_TL--objs := spike_agent.o spike_client.o spike_vcs_TL.o spike_vcs_TL_server.o spike_vcs_TL.o spike_vcs_TL_client.o
 spike_vcs_TL.a: spike_vcs_TL.a($(spike_vcs_TL--objs))
 	$(RANLIB) $@
-files-to-clean += spike_vcs.a
+files-to-clean += spike_vcs_TL.a
 
 spike_vcs_TL.a(%):%
 	$(AR) r $@ $<
@@ -37,11 +37,12 @@ $(c++--objs): %.o:%.cxx
 files-to-clean += $(c++--objs)
 
 spike_agent.o spike_client.o spike_vcs_TL.o spike_vcs_TL_server.o spike_vcs_TL_client.o: spike_vcs_TL/spike_vcs_TL.hxx
-spike_client.o spike_agent.o: spike_vcs_TL/spike_agent.hxx
+spike_agent_test.o spike_agent.o: spike_vcs_TL/spike_agent.hxx
+spike_client.o spike_client_test.o: spike_vcs_TL/spike_client.hxx
 
 run:./simv
 	./simv 
 
 clean:
 	$(RM) -r $(dirs-to-clean)
-	$(RM) -r $(files-to-clean)
+	$(RM) $(files-to-clean)

@@ -68,4 +68,11 @@ ACK::serialize() const {
     }
     return res;
 }
+
+Server& Server::instance()
+{
+    static Server _instance;
+    return _instance;
+}
+
 }  // namespace spike_vcs_TL
