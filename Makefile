@@ -7,33 +7,32 @@ brun: rebuild
 vpath %.cxx src
 vpath %.hxx include
 
-./simv: spike_agent.sv spike_tb.sv axi_mem.sv spike_vcs_TL.a
+./simv: spike_agent.sv spike_tb.sv axi_mem.sv spike_vcs_TL.so
 	vcs -full64 -timescale=1ns/100ps -debug_all -sverilog -l comp.log $^
 
 files-to-clean+=./simv vc_hdrs.h comp.log
 dirs-to-clean +=simv.daidir csrc
 
 spike_client_test--objs := spike_client_test.o 
-spike_client_test: $(spike_client_test--objs) spike_vcs_TL.a
+spike_client_test: $(spike_client_test--objs) spike_vcs_TL.so
 	$(CXX) $^ -o $@
 files-to-clean += spike_client_test
 
 spike_agent_test--objs := spike_agent_test.o 
-spike_agent_test: $(spike_agent_test--objs) spike_vcs_TL.a
+spike_agent_test: $(spike_agent_test--objs) spike_vcs_TL.so
 	$(CXX) $^ -o $@
 files-to-clean += spike_agent_test
 
 spike_vcs_TL--objs := spike_agent.o spike_client.o spike_vcs_TL.o spike_vcs_TL_server.o spike_vcs_TL.o spike_vcs_TL_client.o
-spike_vcs_TL.a: spike_vcs_TL.a($(spike_vcs_TL--objs))
-	$(RANLIB) $@
-files-to-clean += spike_vcs_TL.a
+$(spike_vcs_TL--objs):CXXFLAGS+=-fPIC
 
-spike_vcs_TL.a(%):%
-	$(AR) r $@ $<
+spike_vcs_TL.so: $(spike_vcs_TL--objs)
+	$(CXX) -shared $^ -o $@
+files-to-clean += spike_vcs_TL.so
 
 c++--objs := $(sort $(simv--objs) $(spike_client_test--objs) $(spike_agent_test--objs) $(spike_vcs_TL--objs))
 $(c++--objs): %.o:%.cxx
-	$(CXX) -std=c++11 -I$(SYNOPSYS)/vcsmx_vJ-2014.12-SP3/include -Iinclude -c $< -o $@
+	$(CXX) -std=c++11 $(CXXFLAGS) -I$(SYNOPSYS)/vcsmx_vJ-2014.12-SP3/include -Iinclude -c $< -o $@
 files-to-clean += $(c++--objs)
 
 spike_agent.o spike_client.o spike_vcs_TL.o spike_vcs_TL_server.o spike_vcs_TL_client.o: spike_vcs_TL/spike_vcs_TL.hxx
