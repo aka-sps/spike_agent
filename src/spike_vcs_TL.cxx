@@ -1,4 +1,4 @@
-#include "spike_vcs_TL/spike_vcs_TL.hxx"
+#include "spike_vcs_TL.hxx"
 
 namespace spike_vcs_TL {
 

@@ -1,15 +1,29 @@
 #include "spike_vcs_TL/spike_client.hxx"
-#include "spike_vcs_TL/spike_vcs_TL.hxx"
+#include "spike_vcs_TL.hxx"
+
 #include <climits>
-#include <cassert>
+#include <string>
 
 using spike_vcs_TL::Request_type;
 
 namespace spike_vcs_TL {
+vcs_device_agent::vcs_device_agent()
+    : m_was_transactions(false)
+{}
+
+vcs_device_agent&
+vcs_device_agent::instance()
+{
+    static vcs_device_agent inst;
+    return inst;
+}
+
 bool
 vcs_device_agent::load(uint32_t addr, size_t len, uint8_t* bytes)
 {
-    assert(len == 1 || len == 2 || len == 4);
+    if (!(len == 1 || len == 2 || len == 4)) {
+        throw std::length_error(std::string(__FILE__) + ":" + std::to_string(__LINE__) + ": vcs_device_agent::load bad lenght = " + std::to_string(len));
+    }
     auto const ack = Client::instance().request(Request_type::read, addr, len);
     if (ack->m_cmd == Request_type::read) {
         auto data = ack->m_data;
@@ -30,7 +44,9 @@ vcs_device_agent::load(uint32_t addr, size_t len, uint8_t* bytes)
 bool
 vcs_device_agent::store(uint32_t addr, size_t len, uint8_t const* bytes)
 {
-    assert((len == 1 || len == 2 || len == 4));
+    if (!(len == 1 || len == 2 || len == 4)) {
+        throw std::length_error(std::string(__FILE__) + ":" + std::to_string(__LINE__) + ": vcs_device_agent::store bad lenght = " + std::to_string(len));
+    }
     uint8_t const* p = bytes + len;
     /// \warning Little endian only
     uint32_t data = 0u;
@@ -49,7 +65,6 @@ vcs_device_agent::store(uint32_t addr, size_t len, uint8_t const* bytes)
     return this->m_was_transactions = true;
 }
 
-
 void
 vcs_device_agent::end_of_clock()
 {
@@ -64,17 +79,6 @@ vcs_device_agent::end_of_clock()
         throw Exception();
     }
     this->m_was_transactions = false;
-}
-
-vcs_device_agent::vcs_device_agent()
-    : m_was_transactions(false)
-{}
-
-vcs_device_agent&
-vcs_device_agent::instance()
-{
-    static vcs_device_agent inst;
-    return inst;
 }
 
 void
