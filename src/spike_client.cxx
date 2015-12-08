@@ -102,6 +102,7 @@ public:
         }
     }
 
+private:
     Socket m_socket;
     uint8_t m_sn;
     std::shared_ptr<Request const> m_p_req;
