@@ -1,5 +1,5 @@
-#include "spike_agent.hxx"
-#include "spike_vcs_TL.hxx"
+#include "spike_vcs_TL/spike_agent.hxx"
+#include "spike_vcs_TL/spike_vcs_TL.hxx"
 
 #include <sys/types.h>
 #include <sys/socket.h>
