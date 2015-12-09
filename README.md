@@ -4,6 +4,7 @@ Co-simulation of HW vcs simulation and SW spike RISC-V code simulation.
 # Prerequisites
 ## riscv32i toolset
 **Note:** spike should be made in `vcs` branch of `riscv-tools`.
+spike in this branch cannot run w/o vcs agent.
 
 ```sh
 export PATH=$PATH:~/riscv32i/bin
@@ -11,6 +12,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/riscv32i/lib
 ```
 ## vcs
 ## This repo
+## Your RISC-V application
+All memory transactions from application above phisical address 0xFEED0000 will be translated to vcs model.
+Check spike memory size (below 0xFEED0000):
+```sh
+spike -m1024 ...
+```
 
 # Usage case
 ## Full simulation
@@ -21,6 +28,7 @@ spike -m1024 --isa=RV32IMAFD <your RISC-V executable>
 ```
 
 ##  Simulation w/o spike
+Is useful for separate debug of vcs model.
 ```sh
 make rebuild
 ./simv &
@@ -28,6 +36,7 @@ spike_client_test
 ```
 
 ##  Simulation w/o vcs
+Is useful for separate debug of SW application.
 ```sh
 make rebuild
 spike_agent_test &
@@ -38,7 +47,11 @@ See example of RISC-V application in ricv-tests/benchmarks/vcsrnd
 
 # Makefile goals
 ## all
-Build simv, spike_client_test, spike_agent_test
+Make targets simv, spike_client_test, spike_agent_test
+
+## tests
+Make spike_client_test, spike_agent_test
+
 ## clean
 Standard clean
 ## rebuld
