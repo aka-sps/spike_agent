@@ -2,6 +2,7 @@ RANLIB:=ranlib
 
 .PHONY: all rebuild run brun clean
 all: ./simv spike_client_test spike_agent_test
+tests: spike_client_test spike_agent_test
 rebuild:clean all
 brun: rebuild
 vpath %.cxx src
