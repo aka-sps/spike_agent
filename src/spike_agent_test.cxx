@@ -40,6 +40,7 @@ main(int, char*[])
                             data = (data << 8) | *(--p);
                         }
                         spikeSetData(data);
+                        std::clog << "Read: address=" << std::hex << address << ", size=" << std::hex << size << ", data=" << std::hex << data << std::dec << std::endl;
                     }
                     break;
                 case 2:  // write transaction
@@ -50,6 +51,7 @@ main(int, char*[])
                         if (address < base || base + mem_size < address + size || !(size == 1 || size == 2 || size == 4) || address & (size - 1) != 0) {
                             std::cerr << "Bad write: address=" << std::hex << address << ", size=" << std::hex << size << ", data=" << std::hex << data << std::dec << std::endl;
                         }
+                        std::clog << "Write: address=" << std::hex << address << ", size=" << std::hex << size << ", data=" << std::hex << data << std::dec << std::endl;
                         uint8_t* p = &mem[address - base];
                         for (size_t i = 0; i < size; ++i) {
                             *(p++) = uint8_t(data);
@@ -58,7 +60,7 @@ main(int, char*[])
                     }
                     break;
                 default:
-                    std::cerr << "empty clock" << std::endl;
+                    std::cerr << "empty clock: " << transaction_type << std::endl;
                     break;
             }
             spikeEndClock();
