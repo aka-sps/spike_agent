@@ -13,7 +13,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/riscv32i/lib
 ## vcs
 ## This repo
 ## Your RISC-V application
-See the example of RISC-V application in [ricv-tests/benchmarks/vcsrndhere](https://github.com/aka-sps/riscv-tests/blob/vcs/benchmarks/vcsrnd/vcsrnd.c) (in vcs branch).
+See the example of RISC-V application in [ricv-tests/benchmarks/vcsrnd](https://github.com/aka-sps/riscv-tests/blob/vcs/benchmarks/vcsrnd/vcsrnd.c) (in vcs branch).
 All memory transactions from application above phisical address 0xFEED0000 will be translated to vcs model.
 Check spike memory size (below 0xFEED0000):
 ```sh
