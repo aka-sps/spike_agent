@@ -15,6 +15,9 @@ std::uniform_int_distribution<uint32_t> data_distribution(0, std::numeric_limits
 int
 main(int, char*[])
 {
+    uint32_t const base = 0xFEED0000u;
+    uint32_t const mem_size = 1 << 12u;
+    uint8_t mem[mem_size];
     try {
         spikeSetReset(1);
         spikeSetReset(0);
@@ -25,17 +28,37 @@ main(int, char*[])
             auto const transaction_type = spikeClock();
             switch (transaction_type) {
                 case 1:  // read transaction
-                    (void)spikeGetAddress();
-                    (void)spikeGetSize();
-                    spikeSetData(data_distribution(generator));
+                    {
+                        uint32_t const address = spikeGetAddress();
+                        uint32_t const size = spikeGetSize();
+                        if (address < base || base + mem_size < address + size || !(size == 1 || size == 2 || size == 4) || address & (size - 1) != 0) {
+                            std::cerr << "Bad read: address=" << std::hex << address << ", size=" << std::hex << size << std::dec << std::endl;
+                        }
+                        uint32_t data = 0;
+                        uint8_t const* p = &mem[address - base + size];
+                        for (size_t i = 0; i < size; ++i) {
+                            data = (data << 8) | *(--p);
+                        }
+                        spikeSetData(data);
+                    }
                     break;
                 case 2:  // write transaction
-                    (void)spikeGetAddress();
-                    (void)spikeGetSize();
-                    (void)spikeGetData();
-                    (void)spikeGetData();
+                    {
+                        uint32_t const address = spikeGetAddress();
+                        uint32_t const size = spikeGetSize();
+                        uint32_t data = spikeGetData();
+                        if (address < base || base + mem_size < address + size || !(size == 1 || size == 2 || size == 4) || address & (size - 1) != 0) {
+                            std::cerr << "Bad write: address=" << std::hex << address << ", size=" << std::hex << size << ", data=" << std::hex << data << std::dec << std::endl;
+                        }
+                        uint8_t* p = &mem[address - base];
+                        for (size_t i = 0; i < size; ++i) {
+                            *(p++) = uint8_t(data);
+                            data >>= 8;
+                        }
+                    }
                     break;
                 default:
+                    std::cerr << "empty clock" << std::endl;
                     break;
             }
             spikeEndClock();
