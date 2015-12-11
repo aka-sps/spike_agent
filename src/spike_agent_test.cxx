@@ -60,7 +60,7 @@ main(int, char*[])
                     }
                     break;
                 default:
-                    std::cerr << "empty clock: " << transaction_type << std::endl;
+                    std::clog << "empty clock: " << transaction_type << std::endl;
                     break;
             }
             spikeEndClock();
