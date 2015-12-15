@@ -198,27 +198,28 @@ initial begin
                 case (spikeSize)
                     1: begin
                         case (access_offset)
-                            2'b00 : spikeSetData(int'({24'h000000, CPUNC_RDATA[7:0]}));
-                            2'b01 : spikeSetData(int'({24'h000000, CPUNC_RDATA[15:8]}));
-                            2'b10 : spikeSetData(int'({24'h000000, CPUNC_RDATA[23:16]}));
-                            2'b11 : spikeSetData(int'({24'h000000, CPUNC_RDATA[31:24]}));
+                            2'b00 : spikeRdata = (int'({24'h000000, CPUNC_RDATA[7:0]}));
+                            2'b01 : spikeRdata = (int'({24'h000000, CPUNC_RDATA[15:8]}));
+                            2'b10 : spikeRdata = (int'({24'h000000, CPUNC_RDATA[23:16]}));
+                            2'b11 : spikeRdata = (int'({24'h000000, CPUNC_RDATA[31:24]}));
                             default : begin
                             end
                         endcase
                     end
                     2: begin
                         if (access_offset[1] == 1'b0) begin
-                            spikeSetData(int'({16'h0000, CPUNC_RDATA[15:0]}));
+                            spikeRdata = (int'({16'h0000, CPUNC_RDATA[15:0]}));
                         end else begin
-                            spikeSetData(int'({16'h0000, CPUNC_RDATA[31:16]}));
+                            spikeRdata = (int'({16'h0000, CPUNC_RDATA[31:16]}));
                         end
                     end
                     4: begin
-                        spikeSetData(int'(CPUNC_RDATA));
+                        spikeRdata = (int'(CPUNC_RDATA));
                     end
 
                 endcase
-
+                spikeSetData(spikeRdata);
+                $write("spike-vcs-agent: cmd READ @%x => %x\n",spikeAddr,spikeRdata);
                 #1
                 assert (CPUNC_RRESP == '0) else $error("Spike Agent: Read transaction completed with Error Response");
                 CPUNC_RREADY = 1'b0;
@@ -312,6 +313,7 @@ initial begin
                 while (CPUNC_BVALID == 1'b0) begin
                     @(posedge CPUNC_ACLK);
                 end
+                $write("spike-vcs-agent: cmd WRITE @%x <= %x\n",spikeAddr,spikeWdata);
                 #1
                 CPUNC_BREADY = 1'b0;
             end    
