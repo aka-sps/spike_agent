@@ -1,3 +1,7 @@
+###############################################
+## Copyright 2015 Syntacore 
+## See LICENSE for license details
+###############################################
 RANLIB:=ranlib
 
 .PHONY: all rebuild run brun clean

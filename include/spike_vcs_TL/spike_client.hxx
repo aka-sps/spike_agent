@@ -1,3 +1,8 @@
+////////////////////////////////////////////////////
+// Copyright 2015 Syntacore 
+// See LICENSE for license details
+////////////////////////////////////////////////////
+
 #ifndef SPIKE_VCS_TL__SPIKE_CLIENT_HXX_
 #define SPIKE_VCS_TL__SPIKE_CLIENT_HXX_
 

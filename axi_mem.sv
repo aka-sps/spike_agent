@@ -1,4 +1,9 @@
+////////////////////////////////////////////////////
+// Copyright 2015 Syntacore 
+// See LICENSE for license details
 // AXI memory block
+////////////////////////////////////////////////////
+
 module axi_mem  #(
     parameter MEM_POWER_SIZE = 12,
     parameter AXI_DATA_WIDTH = 32,

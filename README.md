@@ -1,3 +1,7 @@
+////////////////////////////////////////////////////
+// Copyright 2015 Syntacore 
+// See LICENSE for license details
+////////////////////////////////////////////////////
 # spike_agent
 Co-simulation of HW vcs simulation and SW spike RISC-V code simulation.
 
@@ -13,7 +17,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/riscv32i/lib
 ## vcs
 ## This repo
 ## Your RISC-V application
-See the example of RISC-V application in [ricv-tests/benchmarks/vcsrnd](https://github.com/ar-sc/riscv-tests/blob/vcs/benchmarks/vcsrnd/vcsrnd.c) (in vcs branch).
+See the example of RISC-V application in [ricv-tests/benchmarks/vcsrnd](in the vcs branch).
 All memory transactions from application above phisical address 0xFEED0000 will be translated to vcs model.
 Check spike memory size (below 0xFEED0000):
 ```sh
