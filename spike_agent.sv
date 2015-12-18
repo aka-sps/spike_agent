@@ -15,7 +15,9 @@ module spike_agent #(
     // System
     input   logic                           CPUNC_ARESETn,
     input   logic                           CPUNC_ACLK,
-    
+    input   logic			    reset_req,
+    output  logic			    reset_ack,
+   
     // Slave interface
     // Write Address Channel:
     output  logic   [7:0]                   CPUNC_AWID,    //
@@ -142,13 +144,13 @@ initial begin
     CPUNC_WVALID    = 1'b0;  //
     CPUNC_BREADY    = 1'b0;  //
 
-    
+    reset_ack       = 1'b0;
     CPUNC_ARADDR    = 'x;  //
     CPUNC_ARVALID   = 1'b0; //
     CPUNC_RREADY    = 1'b0;
     @(posedge CPUNC_ARESETn);
 
-    while (CPUNC_ARESETn == 1'b1) begin
+    while (reset_req == 1'b0) begin
         @(posedge CPUNC_ACLK);
         spikeCmd = spikeClock();
         #1
@@ -326,6 +328,7 @@ initial begin
         endcase
         spikeEndClock();
     end
+    reset_ack = 1'b1;
 end
 
 // ------------------------------------------------

@@ -111,18 +111,26 @@ logic                           CPUNC0_RLAST;   // <-- SLAVE
 logic                           CPUNC0_RVALID;  // <-- SLAVE
 logic                           CPUNC0_RREADY;
 
+// reset to agent logic 
+logic reset_req;
+logic reset_ack;
+
 //------ System Logic ----------------
 // Reset Logic
 initial begin
     $display("TB: start");
+    reset_req    = 1'b0;
     rst_n        = 1'b0;
     #100ns rst_n = 1'b1;
 
     #1ms
-    #100ns rst_n = 1'b0;
+    reset_req    = 1'b1;
+    while (reset_ack == 1'b0) 
+        @(posedge clk);
+    rst_n = 1'b0;
     $display("TB: finish");
     #100ns
-    $finish;       
+    $finish();
 end
 
 always begin
@@ -141,7 +149,9 @@ i_spike_agent
     // System
     .CPUNC_ARESETn      (rst_n), 
     .CPUNC_ACLK         (clk),
-    
+    .reset_req          (reset_req),
+    .reset_ack          (reset_ack),
+
     // Slave interface
     // Write Address Channel:
     .CPUNC_AWID         (CPUNC_AWID   ),
