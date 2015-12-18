@@ -1,9 +1,9 @@
-////////////////////////////////////////////////////
-// Copyright 2015 Syntacore 
-// See LICENSE for license details
-////////////////////////////////////////////////////
 # spike_agent
 Co-simulation of HW vcs simulation and SW spike RISC-V code simulation.
+
+**Copyright Syntacore 2015**
+
+_See LICENSE for license details_
 
 # Prerequisites
 ## riscv32i toolset
