@@ -1,7 +1,6 @@
-////////////////////////////////////////////////////
-// Copyright 2015 Syntacore 
-// See LICENSE for license details
-////////////////////////////////////////////////////
+/// \file
+/// \copyright Syntacore 2015
+/// See LICENSE for license details
 
 #ifndef SPIKE_AGENT_HXX__
 #define SPIKE_AGENT_HXX__

@@ -1,7 +1,6 @@
-////////////////////////////////////////////////////
-// Copyright 2015 Syntacore 
-// See LICENSE for license details
-////////////////////////////////////////////////////
+/// \file
+/// \copyright Syntacore 2015
+/// See LICENSE for license details
 
 #include "spike_vcs_TL/spike_agent.hxx"
 
